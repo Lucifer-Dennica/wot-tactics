@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>WoT Tactics Online</title>
     <style>
-        /* (стили без изменений, можно скопировать из предыдущего) */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
         #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: #16213e; position: relative; }
@@ -43,10 +42,10 @@
         #tools .color-picker { width: 100%; height: 30px; border: none; background: transparent; cursor: pointer; }
         #tools input[type="range"] { width: 100%; accent-color: #e94560; }
         #tools .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
-        #tools .icon-btn { width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        #tools .icon-btn.active { border-color: #e94560; background: #3a3a7a; }
+        #tools .icon-btn { width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        #tools .icon-btn.active { border-color: #e94560; background-color: #3a3a7a; }
         #clear-btn { margin-top: 8px; background: #c0392b; border: none; color: #fff; padding: 6px; border-radius: 4px; cursor: pointer; }
-        @media (max-width: 700px) { #tools { width: 140px; padding: 6px; } #tools .tool-btn { width: 28px; height: 28px; font-size: 1rem; } #tools .icon-btn { width: 34px; height: 34px; font-size: 1.2rem; } }
+        @media (max-width: 700px) { #tools { width: 140px; padding: 6px; } #tools .tool-btn { width: 28px; height: 28px; font-size: 1rem; } #tools .icon-btn { width: 34px; height: 34px; } }
         @media (max-width: 500px) { #canvas-wrapper { flex-direction: column; } #tools { width: 100%; flex-direction: row; flex-wrap: wrap; height: auto; border-right: none; border-bottom: 2px solid #0f3460; } }
     </style>
 </head>
@@ -85,24 +84,20 @@
             <div id="tools">
                 <label>🔧 Инструмент</label>
                 <div class="tool-group">
-                    <button class="tool-btn active" data-tool="pen">✏️</button>
-                    <button class="tool-btn" data-tool="freehand">🖊️</button> <!-- новая кисть -->
+                    <button class="tool-btn active" data-tool="freehand">🖊️</button> <!-- кисть первая -->
+                    <button class="tool-btn" data-tool="pen">✏️</button>
                     <button class="tool-btn" data-tool="rect">▭</button>
                     <button class="tool-btn" data-tool="circle">●</button>
                     <button class="tool-btn" data-tool="arrow">➡️</button>
-                    <button class="tool-btn" data-tool="select">🖱️</button> <!-- выделение -->
+                    <button class="tool-btn" data-tool="select">🖱️</button>
                 </div>
                 <label>🎨 Цвет</label>
                 <input type="color" class="color-picker" id="color-picker" value="#ff0000">
                 <label>📏 Толщина</label>
                 <input type="range" id="line-width" min="1" max="20" value="3">
                 <label>🚀 Иконки танков</label>
-                <div class="icon-grid">
-                    <button class="icon-btn" data-icon="lt">🚗</button>
-                    <button class="icon-btn" data-icon="mt">🚙</button>
-                    <button class="icon-btn" data-icon="ht">🚛</button>
-                    <button class="icon-btn" data-icon="td">🚜</button>
-                    <button class="icon-btn" data-icon="spg">💥</button>
+                <div class="icon-grid" id="icon-grid">
+                    <!-- будут загружены через JS из файлов -->
                 </div>
                 <button id="clear-btn">🗑️ Очистить всё</button>
             </div>
@@ -118,14 +113,24 @@
 
     // ====== НАСТРОЙКИ ======
     const WS_URL = 'wss://wot-tactics-server.onrender.com'; // ваш сервер
-    const MAPS_JSON_URL = 'maps.json'; // путь к файлу со списком карт
+    const MAPS_JSON_URL = 'maps.json';
+    const ICONS_PATH = 'icons/'; // папка с иконками
+
+    // Список классов танков
+    const TANK_CLASSES = [
+        { id: 'lt', label: 'Лёгкий' },
+        { id: 'mt', label: 'Средний' },
+        { id: 'ht', label: 'Тяжёлый' },
+        { id: 'td', label: 'ПТ-САУ' },
+        { id: 'spg', label: 'Артиллерия' }
+    ];
 
     // ====== СОСТОЯНИЕ ======
     const state = {
         roomName: null,
         mode: 'стандарт',
         map: null,
-        tool: 'pen',
+        tool: 'freehand', // теперь по умолчанию кисть
         color: '#ff0000',
         lineWidth: 3,
         icon: null,
@@ -136,14 +141,10 @@
         ws: null,
         myPlayerId: null,
         isCreator: false,
-        // Для freehand
         freehandPoints: [],
-        // Для выделения/перетаскивания
         selectedIconIndex: -1,
-        dragOffsetX: 0,
-        dragOffsetY: 0,
+        dragOffsetX: 0, dragOffsetY: 0,
         isDragging: false,
-        // Список карт
         mapsList: { 'стандарт': [], 'встречный': [], 'штурм': [] }
     };
 
@@ -170,8 +171,35 @@
     const toolBtns = document.querySelectorAll('.tool-btn');
     const colorPicker = document.getElementById('color-picker');
     const lineWidthInput = document.getElementById('line-width');
-    const iconBtns = document.querySelectorAll('.icon-btn');
+    const iconGrid = document.getElementById('icon-grid');
     const clearBtn = document.getElementById('clear-btn');
+
+    // ====== ЗАГРУЗКА ИКОНОК ======
+    function loadIcons() {
+        iconGrid.innerHTML = '';
+        TANK_CLASSES.forEach(cls => {
+            const btn = document.createElement('button');
+            btn.className = 'icon-btn';
+            btn.dataset.icon = cls.id;
+            btn.title = cls.label;
+            // Устанавливаем фоном картинку
+            btn.style.backgroundImage = `url(${ICONS_PATH}${cls.id}.png)`;
+            btn.style.backgroundColor = '#2a2a5a';
+            btn.style.backgroundSize = 'contain';
+            btn.style.backgroundPosition = 'center';
+            btn.style.backgroundRepeat = 'no-repeat';
+            btn.addEventListener('click', () => {
+                // Снимаем активность со всех иконок и инструментов
+                document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+                toolBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.icon = cls.id;
+                state.tool = 'icon'; // специальный режим для вставки иконок
+                canvas.style.cursor = 'crosshair';
+            });
+            iconGrid.appendChild(btn);
+        });
+    }
 
     // ====== ЗАГРУЗКА СПИСКА КАРТ ======
     async function loadMapsList() {
@@ -180,11 +208,9 @@
             if (!res.ok) throw new Error('Не удалось загрузить maps.json');
             const data = await res.json();
             state.mapsList = data;
-            // Заполним select для текущего режима
             updateMapSelect(state.mode);
         } catch (err) {
             console.warn('Ошибка загрузки maps.json, используем стандартные карты', err);
-            // Запасной вариант
             state.mapsList = {
                 'стандарт': [{ name: 'Прохоровка', file: 'prokhorovka' }, { name: 'Рудники', file: 'mines' }],
                 'встречный': [{ name: 'Прохоровка', file: 'prokhorovka' }],
@@ -197,14 +223,17 @@
     function updateMapSelect(mode) {
         const maps = state.mapsList[mode] || [];
         mapSelect.innerHTML = '';
+        if (maps.length === 0) {
+            mapSelect.innerHTML = '<option value="">Нет карт</option>';
+            return;
+        }
         maps.forEach(m => {
             const opt = document.createElement('option');
             opt.value = m.file;
             opt.textContent = m.name;
             mapSelect.appendChild(opt);
         });
-        if (maps.length > 0) mapSelect.value = maps[0].file;
-        else mapSelect.innerHTML = '<option value="">Нет карт</option>';
+        mapSelect.value = maps[0].file;
     }
 
     // ====== ИНИЦИАЛИЗАЦИЯ ======
@@ -214,6 +243,7 @@
             state.myPlayerId = 'player_' + Math.random().toString(36).substr(2, 8);
             localStorage.setItem('wot_player_id', state.myPlayerId);
         }
+        loadIcons();
         await loadMapsList();
         connectWebSocket();
         createBtn.addEventListener('click', onCreateRoom);
@@ -224,32 +254,22 @@
             updateMapSelect(modeSelect.value);
         });
 
+        // Инструменты
         toolBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 toolBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 state.tool = btn.dataset.tool;
                 state.icon = null;
-                iconBtns.forEach(b => b.classList.remove('active'));
-                // Если выбран select, меняем курсор
+                document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
                 canvas.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
-            });
-        });
-        iconBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                iconBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                state.icon = btn.dataset.icon;
-                state.tool = 'icon'; // временный режим для вставки иконок
-                toolBtns.forEach(b => b.classList.remove('active'));
-                canvas.style.cursor = 'crosshair';
             });
         });
         colorPicker.addEventListener('input', (e) => state.color = e.target.value);
         lineWidthInput.addEventListener('input', (e) => state.lineWidth = parseInt(e.target.value, 10));
         clearBtn.addEventListener('click', onClearDrawings);
 
-        // События мыши на холсте
+        // События мыши
         canvas.addEventListener('mousedown', onMouseDown);
         canvas.addEventListener('mousemove', onMouseMove);
         canvas.addEventListener('mouseup', onMouseUp);
@@ -368,7 +388,7 @@
         }
     }
 
-    // ====== РАБОТА С КОМНАТАМИ ======
+    // ====== КОМНАТЫ ======
     function onCreateRoom() {
         const name = newRoomName.value.trim();
         const password = newRoomPass.value.trim() || null;
@@ -462,18 +482,16 @@
         playerCountSpan.textContent = '👥 ' + state.players.size;
     }
 
-    // ====== ЗАГРУЗКА КАРТЫ ======
+    // ====== КАРТЫ ======
     function loadMap(mapName, mode) {
         if (!mapName) return;
         state.map = mapName;
         state.mode = mode;
-        // Ищем файл карты в mapsList
-        let file = mapName;
         const maps = state.mapsList[mode] || [];
         const found = maps.find(m => m.file === mapName);
-        if (found) file = found.file;
+        const fileName = found ? found.file : mapName;
         const img = new Image();
-        const url = `maps/${mode}/${file}.jpg`; // путь к картинкам на GitHub Pages
+        const url = `maps/${mode}/${fileName}.jpg`;
         img.crossOrigin = 'anonymous';
         img.onload = () => drawFullScene(img);
         img.onerror = () => drawFallbackScene(mapName, mode);
@@ -530,7 +548,7 @@
         drawAllDrawings(rect);
     }
 
-    // ====== ОТРИСОВКА ВСЕХ ЭЛЕМЕНТОВ ======
+    // ====== ОТРИСОВКА ======
     function drawAllDrawings(rect) {
         state.drawings.forEach((item, index) => {
             if (item.type === 'icon') drawIcon(item, rect, index);
@@ -599,17 +617,26 @@
     }
 
     function drawIcon(item, rect, index) {
-        const { icon, x, y, color } = item;
+        const { icon, x, y } = item;
         ctx.save();
-        ctx.font = '32px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const symbols = { lt:'🚗', mt:'🚙', ht:'🚛', td:'🚜', spg:'💥' };
-        const symbol = symbols[icon] || '?';
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = color || '#ffffff';
-        ctx.fillText(symbol, x, y);
+        // Рисуем иконку из файла
+        const img = new Image();
+        img.src = `${ICONS_PATH}${icon}.png`;
+        img.onload = () => {
+            ctx.drawImage(img, x-16, y-16, 32, 32);
+        };
+        img.onerror = () => {
+            // если картинка не загрузилась, рисуем текст
+            ctx.font = '32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const symbols = { lt:'🚗', mt:'🚙', ht:'🚛', td:'🚜', spg:'💥' };
+            const symbol = symbols[icon] || '?';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 8;
+            ctx.fillText(symbol, x, y);
+        };
         // Если выбрана иконка для перетаскивания, подсветим рамкой
         if (state.tool === 'select' && state.selectedIconIndex === index) {
             ctx.shadowBlur = 0;
@@ -624,7 +651,7 @@
         if (state.map) loadMap(state.map, state.mode);
     }
 
-    // ====== ОБРАБОТЧИКИ МЫШИ И ТАЧА ======
+    // ====== ОБРАБОТЧИКИ СОБЫТИЙ ======
     function getCanvasCoords(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -638,31 +665,60 @@
         };
     }
 
-    // ---- Нажатие ----
+    // Переменные для хранения последних координат
+    let lastX = 0, lastY = 0;
+
     function onMouseDown(e) {
         e.preventDefault();
         const { x, y } = getCanvasCoords(e);
+        lastX = x; lastY = y;
         handlePointerDown(x, y);
     }
 
     function onTouchStart(e) {
         e.preventDefault();
         const { x, y } = getCanvasCoords(e);
+        lastX = x; lastY = y;
         handlePointerDown(x, y);
     }
 
+    function onMouseMove(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        lastX = x; lastY = y;
+        handlePointerMove(x, y);
+    }
+
+    function onTouchMove(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        lastX = x; lastY = y;
+        handlePointerMove(x, y);
+    }
+
+    function onMouseUp(e) {
+        e.preventDefault();
+        handlePointerUp();
+    }
+
+    function onTouchEnd(e) {
+        e.preventDefault();
+        handlePointerUp();
+    }
+
+    // ====== ЛОГИКА НАЖАТИЯ ======
     function handlePointerDown(x, y) {
         state.startX = x;
         state.startY = y;
 
+        // Режим выделения
         if (state.tool === 'select') {
-            // Проверяем, попали ли на иконку
             let foundIndex = -1;
             for (let i = state.drawings.length-1; i >= 0; i--) {
                 const item = state.drawings[i];
                 if (item.type === 'icon') {
                     const dist = Math.hypot(x - item.x, y - item.y);
-                    if (dist < 25) { // радиус попадания
+                    if (dist < 25) {
                         foundIndex = i;
                         break;
                     }
@@ -683,9 +739,9 @@
             }
         }
 
-        // Если выбран инструмент иконки (вставка)
+        // Вставка иконки
         if (state.icon) {
-            const item = { type: 'icon', icon: state.icon, x, y, color: state.color };
+            const item = { type: 'icon', icon: state.icon, x, y };
             state.drawings.push(item);
             sendToServer({ type: 'draw', payload: item });
             renderDrawings();
@@ -697,31 +753,16 @@
         if (state.tool === 'freehand') {
             state.freehandPoints = [[x, y]];
         }
-        // Для остальных инструментов сохраняем начальную точку
     }
 
-    // ---- Движение ----
-    function onMouseMove(e) {
-        e.preventDefault();
-        const { x, y } = getCanvasCoords(e);
-        handlePointerMove(x, y);
-    }
-
-    function onTouchMove(e) {
-        e.preventDefault();
-        const { x, y } = getCanvasCoords(e);
-        handlePointerMove(x, y);
-    }
-
+    // ====== ЛОГИКА ДВИЖЕНИЯ ======
     function handlePointerMove(x, y) {
         if (state.tool === 'select' && state.isDragging && state.selectedIconIndex !== -1) {
-            // Перетаскиваем иконку
             const icon = state.drawings[state.selectedIconIndex];
             if (icon) {
                 icon.x = x - state.dragOffsetX;
                 icon.y = y - state.dragOffsetY;
                 renderDrawings();
-                // Отправляем обновление другим
                 sendToServer({
                     type: 'update_icon',
                     index: state.selectedIconIndex,
@@ -735,24 +776,13 @@
         if (!state.isDrawing) return;
         if (state.tool === 'freehand') {
             state.freehandPoints.push([x, y]);
-            // Визуализируем локально (можно просто перерисовать всё)
-            renderDrawings();
-            // Показываем предварительный просмотр, но не отправляем на сервер до отпускания
+            // Визуализируем текущий набросок
+            renderDrawings(); // это перерисует всё, но временно покажем
         }
-        // Для остальных инструментов ничего не делаем до отпускания
+        // для остальных инструментов ничего не делаем
     }
 
-    // ---- Отпускание ----
-    function onMouseUp(e) {
-        e.preventDefault();
-        handlePointerUp();
-    }
-
-    function onTouchEnd(e) {
-        e.preventDefault();
-        handlePointerUp();
-    }
-
+    // ====== ЛОГИКА ОТПУСКАНИЯ ======
     function handlePointerUp() {
         if (state.tool === 'select') {
             state.isDragging = false;
@@ -760,7 +790,6 @@
         }
 
         if (state.isDrawing && state.tool === 'freehand') {
-            // Отправляем весь путь
             if (state.freehandPoints.length > 1) {
                 const payload = {
                     points: state.freehandPoints,
@@ -778,16 +807,8 @@
 
         // Для остальных инструментов (pen, rect, circle, arrow)
         if (state.isDrawing && state.tool !== 'freehand') {
-            const endX = state.startX; // временно сохраним, но нужно конечные координаты
-            const endY = state.startY;
-            // на самом деле нужно взять последние координаты из движения, но мы их не храним
-            // поэтому используем текущие координаты (они в startX/startY не обновляются)
-            // Исправим: в обработчике движения мы не обновляли startX/startY, поэтому используем mouse up координаты
-            // Получим координаты из последнего события
-            // Для простоты будем использовать lastX, lastY, которые обновляем в move
-            // Добавим переменные
-            const x = state.lastX || state.startX;
-            const y = state.lastY || state.startY;
+            const x = lastX;
+            const y = lastY;
             const startX = state.startX;
             const startY = state.startY;
             if (Math.hypot(x - startX, y - startY) < 3) {
@@ -812,16 +833,6 @@
         state.freehandPoints = [];
     }
 
-    // Сохраняем последние координаты для завершения
-    let lastX = 0, lastY = 0;
-    // Переопределим move для обновления lastX/lastY
-    const origHandleMove = handlePointerMove;
-    handlePointerMove = function(x, y) {
-        lastX = x;
-        lastY = y;
-        origHandleMove.call(this, x, y);
-    };
-
     // ====== ДЕЙСТВИЯ ======
     function onApplyMap() {
         const mode = modeSelect.value;
@@ -840,7 +851,6 @@
         renderDrawings();
     }
 
-    // ====== СТАРТ ======
     init();
 })();
 </script>
