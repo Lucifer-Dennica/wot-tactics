@@ -5,157 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>WoT Tactics Online</title>
     <style>
+        /* (стили без изменений, можно скопировать из предыдущего) */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
         #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: #16213e; position: relative; }
-
-        #login {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
-            background: #0f3460;
-        }
+        #login { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: #0f3460; }
         #login h1 { font-size: 2.5rem; margin-bottom: 20px; text-shadow: 0 0 10px #e94560; }
-        .room-panel {
-            background: #1a1a40;
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
-        }
-        .room-panel input, .room-panel button {
-            width: 100%;
-            padding: 10px;
-            margin: 6px 0;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
+        .room-panel { background: #1a1a40; padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); }
+        .room-panel input, .room-panel button { width: 100%; padding: 10px; margin: 6px 0; border: none; border-radius: 6px; font-size: 1rem; }
         .room-panel input { background: #2a2a5a; color: #fff; }
         .room-panel button { background: #e94560; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .room-panel button:hover { background: #c73652; }
         .search-box { width: 100%; padding: 10px; margin: 6px 0; border: none; border-radius: 6px; background: #2a2a5a; color: #fff; font-size: 1rem; }
-        .room-list {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .room-item {
-            background: #2a2a5a;
-            padding: 12px;
-            margin: 6px 0;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .room-list { margin-top: 20px; max-height: 300px; overflow-y: auto; }
+        .room-item { background: #2a2a5a; padding: 12px; margin: 6px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
         .room-item .name { font-weight: bold; }
         .room-item .info { color: #aaa; font-size: 0.9rem; }
         .room-item .actions { display: flex; gap: 6px; }
-        .room-item .actions button {
-            padding: 4px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
+        .room-item .actions button { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
         .room-item .join-btn { background: #1b9cfc; color: #fff; }
         .room-item .delete-btn { background: #c0392b; color: #fff; }
         .error-msg { color: #f5a623; margin-top: 8px; }
-
-        #game {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-            background: #1a1a2e;
-        }
-        #top-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 8px 12px;
-            background: #16213e;
-            border-bottom: 2px solid #0f3460;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        #top-bar select, #top-bar button {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            background: #2a2a5a;
-            color: #fff;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
+        #game { display: none; flex-direction: column; height: 100%; width: 100%; background: #1a1a2e; }
+        #top-bar { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 12px; background: #16213e; border-bottom: 2px solid #0f3460; align-items: center; flex-shrink: 0; }
+        #top-bar select, #top-bar button { padding: 6px 12px; border: none; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 0.9rem; cursor: pointer; }
         #top-bar button { background: #e94560; }
         #top-bar button:hover { background: #c73652; }
         #top-bar .room-info { margin-left: auto; font-weight: bold; color: #f5a623; }
-
-        #canvas-wrapper {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-        }
-        #canvas-container {
-            flex: 1;
-            position: relative;
-            background: #0f0f1f;
-        }
-        #canvas-container canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            background: #222;
-            cursor: crosshair;
-        }
-
-        #tools {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 10px;
-            background: #16213e;
-            border-right: 2px solid #0f3460;
-            width: 180px;
-            flex-shrink: 0;
-            overflow-y: auto;
-            max-height: 100%;
-        }
+        #canvas-wrapper { display: flex; flex: 1; overflow: hidden; position: relative; }
+        #canvas-container { flex: 1; position: relative; background: #0f0f1f; }
+        #canvas-container canvas { display: block; width: 100%; height: 100%; background: #222; cursor: crosshair; }
+        #tools { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #16213e; border-right: 2px solid #0f3460; width: 180px; flex-shrink: 0; overflow-y: auto; max-height: 100%; }
         #tools label { font-size: 0.8rem; color: #aaa; }
         #tools .tool-group { display: flex; flex-wrap: wrap; gap: 4px; }
-        #tools .tool-btn {
-            width: 32px; height: 32px; border: 2px solid #444; border-radius: 4px;
-            background: #2a2a5a; color: #fff; font-size: 1.2rem; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; transition: 0.1s;
-        }
+        #tools .tool-btn { width: 32px; height: 32px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
         #tools .tool-btn.active { border-color: #e94560; background: #3a3a7a; }
         #tools .color-picker { width: 100%; height: 30px; border: none; background: transparent; cursor: pointer; }
         #tools input[type="range"] { width: 100%; accent-color: #e94560; }
         #tools .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
-        #tools .icon-btn {
-            width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px;
-            background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
+        #tools .icon-btn { width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         #tools .icon-btn.active { border-color: #e94560; background: #3a3a7a; }
         #clear-btn { margin-top: 8px; background: #c0392b; border: none; color: #fff; padding: 6px; border-radius: 4px; cursor: pointer; }
-
-        @media (max-width: 700px) {
-            #tools { width: 140px; padding: 6px; }
-            #tools .tool-btn { width: 28px; height: 28px; font-size: 1rem; }
-            #tools .icon-btn { width: 34px; height: 34px; font-size: 1.2rem; }
-        }
-        @media (max-width: 500px) {
-            #canvas-wrapper { flex-direction: column; }
-            #tools { width: 100%; flex-direction: row; flex-wrap: wrap; height: auto; border-right: none; border-bottom: 2px solid #0f3460; }
-        }
+        @media (max-width: 700px) { #tools { width: 140px; padding: 6px; } #tools .tool-btn { width: 28px; height: 28px; font-size: 1rem; } #tools .icon-btn { width: 34px; height: 34px; font-size: 1.2rem; } }
+        @media (max-width: 500px) { #canvas-wrapper { flex-direction: column; } #tools { width: 100%; flex-direction: row; flex-wrap: wrap; height: auto; border-right: none; border-bottom: 2px solid #0f3460; } }
     </style>
 </head>
 <body>
@@ -168,7 +60,6 @@
             <input type="text" id="new-room-password" placeholder="Пароль (необязательно)">
             <button id="create-room-btn">➕ Создать</button>
             <div id="create-error" class="error-msg"></div>
-
             <hr style="margin:20px 0; border-color:#444;">
             <h3>Доступные комнаты</h3>
             <input type="text" id="search-input" class="search-box" placeholder="🔍 Поиск по названию...">
@@ -177,7 +68,6 @@
             <div id="status-msg" style="color:#888; text-align:center; margin-top:10px;"></div>
         </div>
     </div>
-
     <div id="game">
         <div id="top-bar">
             <span style="font-weight:bold;">Комната: <span id="current-room-name">—</span></span>
@@ -186,14 +76,8 @@
                 <option value="встречный">Встречный бой</option>
                 <option value="штурм">Штурм</option>
             </select>
-            <select id="map-select">
-                <option value="prokhorovka">Прохоровка</option>
-                <option value="mines">Рудники</option>
-                <option value="himmelsdorf">Химмельсдорф</option>
-                <option value="cliff">Утёс</option>
-                <option value="erlenberg">Эрленберг</option>
-            </select>
-            <button id="apply-map-btn">Применить карту</button>
+            <select id="map-select"><option value="">Выберите карту</option></select>
+            <button id="apply-map-btn">Применить</button>
             <span class="room-info" id="player-count">👥 1</span>
             <button id="leave-room-btn" style="background:#c0392b;">Выйти</button>
         </div>
@@ -202,9 +86,11 @@
                 <label>🔧 Инструмент</label>
                 <div class="tool-group">
                     <button class="tool-btn active" data-tool="pen">✏️</button>
+                    <button class="tool-btn" data-tool="freehand">🖊️</button> <!-- новая кисть -->
                     <button class="tool-btn" data-tool="rect">▭</button>
                     <button class="tool-btn" data-tool="circle">●</button>
                     <button class="tool-btn" data-tool="arrow">➡️</button>
+                    <button class="tool-btn" data-tool="select">🖱️</button> <!-- выделение -->
                 </div>
                 <label>🎨 Цвет</label>
                 <input type="color" class="color-picker" id="color-picker" value="#ff0000">
@@ -226,34 +112,42 @@
         </div>
     </div>
 </div>
-
 <script>
 (function() {
     'use strict';
 
-    // ====== ВАЖНО: УКАЗЫВАЕМ АДРЕС ВАШЕГО СЕРВЕРА ======
-    const WS_URL = 'wss://wot-tactics-server.onrender.com'; // <-- замените на свой
+    // ====== НАСТРОЙКИ ======
+    const WS_URL = 'wss://wot-tactics-server.onrender.com'; // ваш сервер
+    const MAPS_JSON_URL = 'maps.json'; // путь к файлу со списком карт
 
+    // ====== СОСТОЯНИЕ ======
     const state = {
         roomName: null,
         mode: 'стандарт',
-        map: 'prokhorovka',
+        map: null,
         tool: 'pen',
         color: '#ff0000',
         lineWidth: 3,
         icon: null,
         isDrawing: false,
-        startX: 0,
-        startY: 0,
-        currentX: 0,
-        currentY: 0,
+        startX: 0, startY: 0,
         drawings: [],
         players: new Set(),
         ws: null,
         myPlayerId: null,
         isCreator: false,
+        // Для freehand
+        freehandPoints: [],
+        // Для выделения/перетаскивания
+        selectedIconIndex: -1,
+        dragOffsetX: 0,
+        dragOffsetY: 0,
+        isDragging: false,
+        // Список карт
+        mapsList: { 'стандарт': [], 'встречный': [], 'штурм': [] }
     };
 
+    // ====== DOM ======
     const loginScreen = document.getElementById('login');
     const gameScreen = document.getElementById('game');
     const roomListEl = document.getElementById('room-list');
@@ -261,39 +155,74 @@
     const createError = document.getElementById('create-error');
     const joinError = document.getElementById('join-error');
     const statusMsg = document.getElementById('status-msg');
-
     const newRoomName = document.getElementById('new-room-name');
     const newRoomPass = document.getElementById('new-room-password');
     const createBtn = document.getElementById('create-room-btn');
-
     const currentRoomNameSpan = document.getElementById('current-room-name');
     const modeSelect = document.getElementById('mode-select');
     const mapSelect = document.getElementById('map-select');
     const applyMapBtn = document.getElementById('apply-map-btn');
     const leaveBtn = document.getElementById('leave-room-btn');
     const playerCountSpan = document.getElementById('player-count');
-
     const canvas = document.getElementById('map-canvas');
     const ctx = canvas.getContext('2d');
     const container = document.getElementById('canvas-container');
-
     const toolBtns = document.querySelectorAll('.tool-btn');
     const colorPicker = document.getElementById('color-picker');
     const lineWidthInput = document.getElementById('line-width');
     const iconBtns = document.querySelectorAll('.icon-btn');
     const clearBtn = document.getElementById('clear-btn');
 
-    function init() {
+    // ====== ЗАГРУЗКА СПИСКА КАРТ ======
+    async function loadMapsList() {
+        try {
+            const res = await fetch(MAPS_JSON_URL);
+            if (!res.ok) throw new Error('Не удалось загрузить maps.json');
+            const data = await res.json();
+            state.mapsList = data;
+            // Заполним select для текущего режима
+            updateMapSelect(state.mode);
+        } catch (err) {
+            console.warn('Ошибка загрузки maps.json, используем стандартные карты', err);
+            // Запасной вариант
+            state.mapsList = {
+                'стандарт': [{ name: 'Прохоровка', file: 'prokhorovka' }, { name: 'Рудники', file: 'mines' }],
+                'встречный': [{ name: 'Прохоровка', file: 'prokhorovka' }],
+                'штурм': [{ name: 'Утёс', file: 'cliff' }]
+            };
+            updateMapSelect(state.mode);
+        }
+    }
+
+    function updateMapSelect(mode) {
+        const maps = state.mapsList[mode] || [];
+        mapSelect.innerHTML = '';
+        maps.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.file;
+            opt.textContent = m.name;
+            mapSelect.appendChild(opt);
+        });
+        if (maps.length > 0) mapSelect.value = maps[0].file;
+        else mapSelect.innerHTML = '<option value="">Нет карт</option>';
+    }
+
+    // ====== ИНИЦИАЛИЗАЦИЯ ======
+    async function init() {
         state.myPlayerId = localStorage.getItem('wot_player_id');
         if (!state.myPlayerId) {
             state.myPlayerId = 'player_' + Math.random().toString(36).substr(2, 8);
             localStorage.setItem('wot_player_id', state.myPlayerId);
         }
+        await loadMapsList();
         connectWebSocket();
         createBtn.addEventListener('click', onCreateRoom);
         leaveBtn.addEventListener('click', onLeaveRoom);
         applyMapBtn.addEventListener('click', onApplyMap);
         searchInput.addEventListener('input', renderRoomList);
+        modeSelect.addEventListener('change', () => {
+            updateMapSelect(modeSelect.value);
+        });
 
         toolBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -302,6 +231,8 @@
                 state.tool = btn.dataset.tool;
                 state.icon = null;
                 iconBtns.forEach(b => b.classList.remove('active'));
+                // Если выбран select, меняем курсор
+                canvas.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
             });
         });
         iconBtns.forEach(btn => {
@@ -309,26 +240,30 @@
                 iconBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 state.icon = btn.dataset.icon;
+                state.tool = 'icon'; // временный режим для вставки иконок
                 toolBtns.forEach(b => b.classList.remove('active'));
+                canvas.style.cursor = 'crosshair';
             });
         });
         colorPicker.addEventListener('input', (e) => state.color = e.target.value);
         lineWidthInput.addEventListener('input', (e) => state.lineWidth = parseInt(e.target.value, 10));
         clearBtn.addEventListener('click', onClearDrawings);
 
-        canvas.addEventListener('mousedown', startDraw);
-        canvas.addEventListener('mousemove', drawMove);
-        canvas.addEventListener('mouseup', endDraw);
-        canvas.addEventListener('mouseleave', endDraw);
-        canvas.addEventListener('touchstart', startDraw, { passive: false });
-        canvas.addEventListener('touchmove', drawMove, { passive: false });
-        canvas.addEventListener('touchend', endDraw, { passive: false });
+        // События мыши на холсте
+        canvas.addEventListener('mousedown', onMouseDown);
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('mouseup', onMouseUp);
+        canvas.addEventListener('mouseleave', onMouseUp);
+        canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+        canvas.addEventListener('touchend', onTouchEnd, { passive: false });
 
         window.addEventListener('resize', () => {
             if (state.roomName) loadMap(state.map, state.mode);
         });
     }
 
+    // ====== WEBSOCKET ======
     function connectWebSocket() {
         if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
         state.ws = new WebSocket(WS_URL);
@@ -385,7 +320,6 @@
                 state.isCreator = room ? room.creatorId === state.myPlayerId : false;
                 showGameScreen();
                 loadMap(state.map, state.mode);
-                renderDrawings();
                 break;
             case 'player_joined':
                 state.players.add(data.playerId);
@@ -394,6 +328,18 @@
             case 'draw':
                 state.drawings.push(data.payload);
                 renderDrawings();
+                break;
+            case 'draw_freehand':
+                state.drawings.push({ type: 'freehand', ...data.payload });
+                renderDrawings();
+                break;
+            case 'update_icon':
+                const idx = data.index;
+                if (state.drawings[idx] && state.drawings[idx].type === 'icon') {
+                    state.drawings[idx].x = data.newX;
+                    state.drawings[idx].y = data.newY;
+                    renderDrawings();
+                }
                 break;
             case 'clear':
                 state.drawings = [];
@@ -410,7 +356,7 @@
                 break;
             case 'error':
                 const errMsg = data.message || 'Ошибка';
-                if (document.getElementById('login').style.display !== 'none') {
+                if (loginScreen.style.display !== 'none') {
                     createError.textContent = errMsg;
                     joinError.textContent = errMsg;
                 } else {
@@ -422,37 +368,22 @@
         }
     }
 
+    // ====== РАБОТА С КОМНАТАМИ ======
     function onCreateRoom() {
         const name = newRoomName.value.trim();
         const password = newRoomPass.value.trim() || null;
-        if (!name) {
-            createError.textContent = 'Введите название комнаты';
-            return;
-        }
+        if (!name) { createError.textContent = 'Введите название комнаты'; return; }
         createError.textContent = '';
-        sendToServer({
-            type: 'create_room',
-            name,
-            password,
-            creatorId: state.myPlayerId
-        });
+        sendToServer({ type: 'create_room', name, password, creatorId: state.myPlayerId });
     }
 
     function joinRoom(roomName) {
-        sendToServer({
-            type: 'join_room',
-            roomName,
-            playerId: state.myPlayerId
-        });
+        sendToServer({ type: 'join_room', roomName, playerId: state.myPlayerId });
     }
 
     function deleteRoom(roomName) {
         if (!confirm(`Удалить комнату "${roomName}"?`)) return;
-        sendToServer({
-            type: 'delete_room',
-            roomName,
-            deleterId: state.myPlayerId
-        });
+        sendToServer({ type: 'delete_room', roomName, deleterId: state.myPlayerId });
     }
 
     function onLeaveRoom() {
@@ -494,7 +425,6 @@
                 joinRoom(room.name);
             });
             actions.appendChild(joinBtn);
-
             if (room.creatorId === state.myPlayerId) {
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-btn';
@@ -505,26 +435,26 @@
                 });
                 actions.appendChild(delBtn);
             }
-
             const left = document.createElement('div');
             left.style.display = 'flex';
             left.style.alignItems = 'center';
             left.style.gap = '8px';
             left.appendChild(nameSpan);
             left.appendChild(infoSpan);
-
             div.appendChild(left);
             div.appendChild(actions);
             roomListEl.appendChild(div);
         });
     }
 
+    // ====== ИГРОВОЙ ЭКРАН ======
     function showGameScreen() {
         loginScreen.style.display = 'none';
         gameScreen.style.display = 'flex';
         currentRoomNameSpan.textContent = state.roomName;
         modeSelect.value = state.mode;
-        mapSelect.value = state.map;
+        updateMapSelect(state.mode);
+        if (state.map) mapSelect.value = state.map;
         updatePlayerCount();
     }
 
@@ -532,11 +462,18 @@
         playerCountSpan.textContent = '👥 ' + state.players.size;
     }
 
+    // ====== ЗАГРУЗКА КАРТЫ ======
     function loadMap(mapName, mode) {
+        if (!mapName) return;
         state.map = mapName;
         state.mode = mode;
+        // Ищем файл карты в mapsList
+        let file = mapName;
+        const maps = state.mapsList[mode] || [];
+        const found = maps.find(m => m.file === mapName);
+        if (found) file = found.file;
         const img = new Image();
-        const url = `https://static.wotgarage.net/wot/8.5/maps/${mapName}.jpg`;
+        const url = `maps/${mode}/${file}.jpg`; // путь к картинкам на GitHub Pages
         img.crossOrigin = 'anonymous';
         img.onload = () => drawFullScene(img);
         img.onerror = () => drawFallbackScene(mapName, mode);
@@ -574,10 +511,9 @@
         ctx.strokeStyle = '#444';
         ctx.lineWidth = 1;
         for (let i = 0; i <= 10; i++) {
-            const x = (i / 10) * rect.width;
-            const y = (i / 10) * rect.height;
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, rect.height); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(rect.width, y); ctx.stroke();
+            const x = (i/10)*rect.width, y = (i/10)*rect.height;
+            ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,rect.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(rect.width,y); ctx.stroke();
         }
         ctx.fillStyle = '#aaa';
         ctx.font = '20px sans-serif';
@@ -585,18 +521,20 @@
         ctx.fillStyle = '#f5a623';
         ctx.font = '16px sans-serif';
         if (mode === 'стандарт' || mode === 'встречный') {
-            ctx.fillText('🏴 База 1', 50, rect.height - 50);
-            ctx.fillText('🏴 База 2', rect.width - 120, 50);
+            ctx.fillText('🏴 База 1', 50, rect.height-50);
+            ctx.fillText('🏴 База 2', rect.width-120, 50);
         } else if (mode === 'штурм') {
             ctx.fillText('🏴 Защита', 50, 50);
-            ctx.fillText('🏴 Атака', rect.width - 120, rect.height - 50);
+            ctx.fillText('🏴 Атака', rect.width-120, rect.height-50);
         }
         drawAllDrawings(rect);
     }
 
+    // ====== ОТРИСОВКА ВСЕХ ЭЛЕМЕНТОВ ======
     function drawAllDrawings(rect) {
-        state.drawings.forEach(item => {
-            if (item.type === 'icon') drawIcon(item, rect);
+        state.drawings.forEach((item, index) => {
+            if (item.type === 'icon') drawIcon(item, rect, index);
+            else if (item.type === 'freehand') drawFreehand(item, rect);
             else drawShape(item, rect);
         });
     }
@@ -615,34 +553,52 @@
                 ctx.stroke();
                 break;
             case 'rect':
-                const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
-                const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
+                const rx = Math.min(x1,x2), ry = Math.min(y1,y2);
+                const rw = Math.abs(x2-x1), rh = Math.abs(y2-y1);
                 ctx.strokeRect(rx, ry, rw, rh);
                 break;
             case 'circle':
-                const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
-                const rad = Math.hypot(x2 - x1, y2 - y1) / 2;
-                ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+                const cx = (x1+x2)/2, cy = (y1+y2)/2;
+                const rad = Math.hypot(x2-x1, y2-y1)/2;
+                ctx.arc(cx, cy, rad, 0, Math.PI*2);
                 ctx.stroke();
                 break;
             case 'arrow':
-                const angle = Math.atan2(y2 - y1, x2 - x1);
+                const angle = Math.atan2(y2-y1, x2-x1);
                 const headLen = 12;
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.stroke();
                 ctx.beginPath();
                 ctx.moveTo(x2, y2);
-                ctx.lineTo(x2 - headLen * Math.cos(angle - 0.4), y2 - headLen * Math.sin(angle - 0.4));
+                ctx.lineTo(x2 - headLen*Math.cos(angle-0.4), y2 - headLen*Math.sin(angle-0.4));
                 ctx.moveTo(x2, y2);
-                ctx.lineTo(x2 - headLen * Math.cos(angle + 0.4), y2 - headLen * Math.sin(angle + 0.4));
+                ctx.lineTo(x2 - headLen*Math.cos(angle+0.4), y2 - headLen*Math.sin(angle+0.4));
                 ctx.stroke();
                 break;
+            default: break;
         }
         ctx.restore();
     }
 
-    function drawIcon(item, rect) {
+    function drawFreehand(item, rect) {
+        const { points, color, lineWidth } = item;
+        if (!points || points.length < 2) return;
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth || 2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i][0], points[i][1]);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawIcon(item, rect, index) {
         const { icon, x, y, color } = item;
         ctx.save();
         ctx.font = '32px sans-serif';
@@ -654,18 +610,26 @@
         ctx.shadowBlur = 8;
         ctx.fillStyle = color || '#ffffff';
         ctx.fillText(symbol, x, y);
+        // Если выбрана иконка для перетаскивания, подсветим рамкой
+        if (state.tool === 'select' && state.selectedIconIndex === index) {
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x-20, y-20, 40, 40);
+        }
         ctx.restore();
     }
 
     function renderDrawings() {
-        loadMap(state.map, state.mode);
+        if (state.map) loadMap(state.map, state.mode);
     }
 
+    // ====== ОБРАБОТЧИКИ МЫШИ И ТАЧА ======
     function getCanvasCoords(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        if (clientX == null) return { x: 0, y: 0 };
+        if (clientX == null) return { x:0, y:0 };
         const scaleX = canvas.width / (rect.width * window.devicePixelRatio);
         const scaleY = canvas.height / (rect.height * window.devicePixelRatio);
         return {
@@ -674,30 +638,52 @@
         };
     }
 
-    function startDraw(e) {
+    // ---- Нажатие ----
+    function onMouseDown(e) {
         e.preventDefault();
         const { x, y } = getCanvasCoords(e);
-        state.isDrawing = true;
+        handlePointerDown(x, y);
+    }
+
+    function onTouchStart(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        handlePointerDown(x, y);
+    }
+
+    function handlePointerDown(x, y) {
         state.startX = x;
         state.startY = y;
-    }
 
-    function drawMove(e) {
-        e.preventDefault();
-        if (!state.isDrawing) return;
-        const { x, y } = getCanvasCoords(e);
-        state.currentX = x;
-        state.currentY = y;
-    }
+        if (state.tool === 'select') {
+            // Проверяем, попали ли на иконку
+            let foundIndex = -1;
+            for (let i = state.drawings.length-1; i >= 0; i--) {
+                const item = state.drawings[i];
+                if (item.type === 'icon') {
+                    const dist = Math.hypot(x - item.x, y - item.y);
+                    if (dist < 25) { // радиус попадания
+                        foundIndex = i;
+                        break;
+                    }
+                }
+            }
+            if (foundIndex !== -1) {
+                state.selectedIconIndex = foundIndex;
+                state.isDragging = true;
+                const icon = state.drawings[foundIndex];
+                state.dragOffsetX = x - icon.x;
+                state.dragOffsetY = y - icon.y;
+                renderDrawings();
+                return;
+            } else {
+                state.selectedIconIndex = -1;
+                renderDrawings();
+                return;
+            }
+        }
 
-    function endDraw(e) {
-        e.preventDefault();
-        if (!state.isDrawing) return;
-        state.isDrawing = false;
-        const { x, y } = getCanvasCoords(e);
-        const startX = state.startX;
-        const startY = state.startY;
-
+        // Если выбран инструмент иконки (вставка)
         if (state.icon) {
             const item = { type: 'icon', icon: state.icon, x, y, color: state.color };
             state.drawings.push(item);
@@ -706,26 +692,141 @@
             return;
         }
 
-        if (Math.hypot(x - startX, y - startY) < 3) return;
-
-        const item = {
-            type: 'shape',
-            tool: state.tool,
-            color: state.color,
-            lineWidth: state.lineWidth,
-            x1: startX,
-            y1: startY,
-            x2: x,
-            y2: y
-        };
-        state.drawings.push(item);
-        sendToServer({ type: 'draw', payload: item });
-        renderDrawings();
+        // Начало рисования
+        state.isDrawing = true;
+        if (state.tool === 'freehand') {
+            state.freehandPoints = [[x, y]];
+        }
+        // Для остальных инструментов сохраняем начальную точку
     }
 
+    // ---- Движение ----
+    function onMouseMove(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        handlePointerMove(x, y);
+    }
+
+    function onTouchMove(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        handlePointerMove(x, y);
+    }
+
+    function handlePointerMove(x, y) {
+        if (state.tool === 'select' && state.isDragging && state.selectedIconIndex !== -1) {
+            // Перетаскиваем иконку
+            const icon = state.drawings[state.selectedIconIndex];
+            if (icon) {
+                icon.x = x - state.dragOffsetX;
+                icon.y = y - state.dragOffsetY;
+                renderDrawings();
+                // Отправляем обновление другим
+                sendToServer({
+                    type: 'update_icon',
+                    index: state.selectedIconIndex,
+                    newX: icon.x,
+                    newY: icon.y
+                });
+            }
+            return;
+        }
+
+        if (!state.isDrawing) return;
+        if (state.tool === 'freehand') {
+            state.freehandPoints.push([x, y]);
+            // Визуализируем локально (можно просто перерисовать всё)
+            renderDrawings();
+            // Показываем предварительный просмотр, но не отправляем на сервер до отпускания
+        }
+        // Для остальных инструментов ничего не делаем до отпускания
+    }
+
+    // ---- Отпускание ----
+    function onMouseUp(e) {
+        e.preventDefault();
+        handlePointerUp();
+    }
+
+    function onTouchEnd(e) {
+        e.preventDefault();
+        handlePointerUp();
+    }
+
+    function handlePointerUp() {
+        if (state.tool === 'select') {
+            state.isDragging = false;
+            return;
+        }
+
+        if (state.isDrawing && state.tool === 'freehand') {
+            // Отправляем весь путь
+            if (state.freehandPoints.length > 1) {
+                const payload = {
+                    points: state.freehandPoints,
+                    color: state.color,
+                    lineWidth: state.lineWidth
+                };
+                state.drawings.push({ type: 'freehand', ...payload });
+                sendToServer({ type: 'draw_freehand', payload });
+                renderDrawings();
+            }
+            state.freehandPoints = [];
+            state.isDrawing = false;
+            return;
+        }
+
+        // Для остальных инструментов (pen, rect, circle, arrow)
+        if (state.isDrawing && state.tool !== 'freehand') {
+            const endX = state.startX; // временно сохраним, но нужно конечные координаты
+            const endY = state.startY;
+            // на самом деле нужно взять последние координаты из движения, но мы их не храним
+            // поэтому используем текущие координаты (они в startX/startY не обновляются)
+            // Исправим: в обработчике движения мы не обновляли startX/startY, поэтому используем mouse up координаты
+            // Получим координаты из последнего события
+            // Для простоты будем использовать lastX, lastY, которые обновляем в move
+            // Добавим переменные
+            const x = state.lastX || state.startX;
+            const y = state.lastY || state.startY;
+            const startX = state.startX;
+            const startY = state.startY;
+            if (Math.hypot(x - startX, y - startY) < 3) {
+                state.isDrawing = false;
+                return;
+            }
+            const item = {
+                type: 'shape',
+                tool: state.tool,
+                color: state.color,
+                lineWidth: state.lineWidth,
+                x1: startX,
+                y1: startY,
+                x2: x,
+                y2: y
+            };
+            state.drawings.push(item);
+            sendToServer({ type: 'draw', payload: item });
+            renderDrawings();
+        }
+        state.isDrawing = false;
+        state.freehandPoints = [];
+    }
+
+    // Сохраняем последние координаты для завершения
+    let lastX = 0, lastY = 0;
+    // Переопределим move для обновления lastX/lastY
+    const origHandleMove = handlePointerMove;
+    handlePointerMove = function(x, y) {
+        lastX = x;
+        lastY = y;
+        origHandleMove.call(this, x, y);
+    };
+
+    // ====== ДЕЙСТВИЯ ======
     function onApplyMap() {
         const mode = modeSelect.value;
         const map = mapSelect.value;
+        if (!map) return;
         sendToServer({ type: 'load_map', map, mode });
         state.map = map;
         state.mode = mode;
@@ -739,6 +840,7 @@
         renderDrawings();
     }
 
+    // ====== СТАРТ ======
     init();
 })();
 </script>

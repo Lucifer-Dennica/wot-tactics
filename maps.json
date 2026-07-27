@@ -1,0 +1,18 @@
+{
+  "стандарт": [
+    { "name": "Прохоровка", "file": "prokhorovka" },
+    { "name": "Рудники", "file": "mines" },
+    { "name": "Химмельсдорф", "file": "himmelsdorf" },
+    { "name": "Утёс", "file": "cliff" },
+    { "name": "Эрленберг", "file": "erlenberg" }
+  ],
+  "встречный": [
+    { "name": "Прохоровка", "file": "prokhorovka" },
+    { "name": "Рудники", "file": "mines" },
+    { "name": "Химмельсдорф", "file": "himmelsdorf" }
+  ],
+  "штурм": [
+    { "name": "Утёс", "file": "cliff" },
+    { "name": "Эрленберг", "file": "erlenberg" }
+  ]
+}
