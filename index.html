@@ -3,28 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>WoT Tactics</title>
+    <title>WoT Tactics Online</title>
     <style>
-        /* --- Сброс и общие стили --- */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-        /* --- Главный контейнер --- */
-        #app {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100vw;
-            background: #16213e;
-            position: relative;
-        }
-        /* --- Экран комнат --- */
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
+        #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: #16213e; position: relative; }
+
         #login {
             display: flex;
             flex-direction: column;
@@ -34,43 +18,27 @@
             padding: 20px;
             background: #0f3460;
         }
-        #login h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px #e94560;
-        }
+        #login h1 { font-size: 2.5rem; margin-bottom: 20px; text-shadow: 0 0 10px #e94560; }
         .room-panel {
             background: #1a1a40;
             padding: 20px;
             border-radius: 12px;
             width: 90%;
-            max-width: 500px;
+            max-width: 600px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.7);
         }
-        .room-panel input {
+        .room-panel input, .room-panel button {
             width: 100%;
             padding: 10px;
             margin: 6px 0;
             border: none;
             border-radius: 6px;
-            background: #2a2a5a;
-            color: #fff;
             font-size: 1rem;
         }
-        .room-panel button {
-            width: 100%;
-            padding: 12px;
-            margin: 6px 0;
-            border: none;
-            border-radius: 6px;
-            background: #e94560;
-            color: #fff;
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        .room-panel input { background: #2a2a5a; color: #fff; }
+        .room-panel button { background: #e94560; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .room-panel button:hover { background: #c73652; }
+        .search-box { width: 100%; padding: 10px; margin: 6px 0; border: none; border-radius: 6px; background: #2a2a5a; color: #fff; font-size: 1rem; }
         .room-list {
             margin-top: 20px;
             max-height: 300px;
@@ -86,18 +54,19 @@
             align-items: center;
         }
         .room-item .name { font-weight: bold; }
-        .room-item .join-btn {
-            background: #1b9cfc;
-            padding: 6px 16px;
+        .room-item .info { color: #aaa; font-size: 0.9rem; }
+        .room-item .actions { display: flex; gap: 6px; }
+        .room-item .actions button {
+            padding: 4px 12px;
             border: none;
             border-radius: 4px;
-            color: #fff;
             cursor: pointer;
+            font-size: 0.8rem;
         }
-        .room-item .join-btn:hover { background: #0d7ad6; }
+        .room-item .join-btn { background: #1b9cfc; color: #fff; }
+        .room-item .delete-btn { background: #c0392b; color: #fff; }
         .error-msg { color: #f5a623; margin-top: 8px; }
 
-        /* --- Игровой экран --- */
         #game {
             display: none;
             flex-direction: column;
@@ -105,7 +74,6 @@
             width: 100%;
             background: #1a1a2e;
         }
-        /* Верхняя панель (режим + карта) */
         #top-bar {
             display: flex;
             flex-wrap: wrap;
@@ -127,13 +95,8 @@
         }
         #top-bar button { background: #e94560; }
         #top-bar button:hover { background: #c73652; }
-        #top-bar .room-info {
-            margin-left: auto;
-            font-weight: bold;
-            color: #f5a623;
-        }
+        #top-bar .room-info { margin-left: auto; font-weight: bold; color: #f5a623; }
 
-        /* Основная область: холст + инструменты */
         #canvas-wrapper {
             display: flex;
             flex: 1;
@@ -153,7 +116,6 @@
             cursor: crosshair;
         }
 
-        /* Панель инструментов (слева) */
         #tools {
             display: flex;
             flex-direction: column;
@@ -166,91 +128,38 @@
             overflow-y: auto;
             max-height: 100%;
         }
-        #tools label {
-            font-size: 0.8rem;
-            color: #aaa;
-        }
-        #tools .tool-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
+        #tools label { font-size: 0.8rem; color: #aaa; }
+        #tools .tool-group { display: flex; flex-wrap: wrap; gap: 4px; }
         #tools .tool-btn {
-            width: 32px;
-            height: 32px;
-            border: 2px solid #444;
-            border-radius: 4px;
-            background: #2a2a5a;
-            color: #fff;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.1s;
+            width: 32px; height: 32px; border: 2px solid #444; border-radius: 4px;
+            background: #2a2a5a; color: #fff; font-size: 1.2rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.1s;
         }
-        #tools .tool-btn.active {
-            border-color: #e94560;
-            background: #3a3a7a;
-        }
-        #tools .tool-btn:hover { background: #3a3a7a; }
-        #tools .color-picker {
-            width: 100%;
-            height: 30px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-        }
-        #tools input[type="range"] {
-            width: 100%;
-            accent-color: #e94560;
-        }
-        #tools .icon-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2px;
-        }
+        #tools .tool-btn.active { border-color: #e94560; background: #3a3a7a; }
+        #tools .color-picker { width: 100%; height: 30px; border: none; background: transparent; cursor: pointer; }
+        #tools input[type="range"] { width: 100%; accent-color: #e94560; }
+        #tools .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
         #tools .icon-btn {
-            width: 40px;
-            height: 40px;
-            border: 2px solid #444;
-            border-radius: 4px;
-            background: #2a2a5a;
-            color: #fff;
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px;
+            background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
         #tools .icon-btn.active { border-color: #e94560; background: #3a3a7a; }
-        #clear-btn {
-            margin-top: 8px;
-            background: #c0392b;
-            border: none;
-            color: #fff;
-            padding: 6px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+        #clear-btn { margin-top: 8px; background: #c0392b; border: none; color: #fff; padding: 6px; border-radius: 4px; cursor: pointer; }
 
-        /* --- Адаптив --- */
         @media (max-width: 700px) {
             #tools { width: 140px; padding: 6px; }
             #tools .tool-btn { width: 28px; height: 28px; font-size: 1rem; }
             #tools .icon-btn { width: 34px; height: 34px; font-size: 1.2rem; }
-            #top-bar select, #top-bar button { font-size: 0.7rem; padding: 4px 8px; }
         }
         @media (max-width: 500px) {
             #canvas-wrapper { flex-direction: column; }
             #tools { width: 100%; flex-direction: row; flex-wrap: wrap; height: auto; border-right: none; border-bottom: 2px solid #0f3460; }
-            #tools .tool-group { flex-wrap: wrap; }
         }
     </style>
 </head>
 <body>
 <div id="app">
-    <!-- Экран входа / комнаты -->
     <div id="login">
         <h1>⚔️ WoT Tactics</h1>
         <div class="room-panel">
@@ -259,14 +168,16 @@
             <input type="text" id="new-room-password" placeholder="Пароль (необязательно)">
             <button id="create-room-btn">➕ Создать</button>
             <div id="create-error" class="error-msg"></div>
+
             <hr style="margin:20px 0; border-color:#444;">
             <h3>Доступные комнаты</h3>
+            <input type="text" id="search-input" class="search-box" placeholder="🔍 Поиск по названию...">
             <div id="room-list" class="room-list"></div>
             <div id="join-error" class="error-msg"></div>
+            <div id="status-msg" style="color:#888; text-align:center; margin-top:10px;"></div>
         </div>
     </div>
 
-    <!-- Игровой экран -->
     <div id="game">
         <div id="top-bar">
             <span style="font-weight:bold;">Комната: <span id="current-room-name">—</span></span>
@@ -290,10 +201,10 @@
             <div id="tools">
                 <label>🔧 Инструмент</label>
                 <div class="tool-group">
-                    <button class="tool-btn active" data-tool="pen" title="Линия">✏️</button>
-                    <button class="tool-btn" data-tool="rect" title="Прямоугольник">▭</button>
-                    <button class="tool-btn" data-tool="circle" title="Круг">●</button>
-                    <button class="tool-btn" data-tool="arrow" title="Стрелка">➡️</button>
+                    <button class="tool-btn active" data-tool="pen">✏️</button>
+                    <button class="tool-btn" data-tool="rect">▭</button>
+                    <button class="tool-btn" data-tool="circle">●</button>
+                    <button class="tool-btn" data-tool="arrow">➡️</button>
                 </div>
                 <label>🎨 Цвет</label>
                 <input type="color" class="color-picker" id="color-picker" value="#ff0000">
@@ -317,672 +228,519 @@
 </div>
 
 <script>
-    (function() {
-        'use strict';
+(function() {
+    'use strict';
 
-        // ---------- Состояние ----------
-        const state = {
-            roomName: null,
-            roomPassword: null,
-            mode: 'стандарт',
-            map: 'prokhorovka',
-            // Рисование
-            tool: 'pen', // pen, rect, circle, arrow
-            color: '#ff0000',
-            lineWidth: 3,
-            icon: null, // 'lt','mt','ht','td','spg' или null
-            // Для рисования
-            isDrawing: false,
-            startX: 0,
-            startY: 0,
-            // Данные рисунка (массив объектов)
-            drawings: [],
-            // Синхронизация
-            channel: null,
-            // Игроки (для счётчика)
-            players: new Set(),
-        };
+    // ====== ВАЖНО: УКАЗЫВАЕМ АДРЕС ВАШЕГО СЕРВЕРА ======
+    const WS_URL = 'wss://wot-tactics-server.onrender.com'; // <-- замените на свой
 
-        // ---------- DOM элементы ----------
-        const loginScreen = document.getElementById('login');
-        const gameScreen = document.getElementById('game');
-        const roomListEl = document.getElementById('room-list');
-        const createError = document.getElementById('create-error');
-        const joinError = document.getElementById('join-error');
+    const state = {
+        roomName: null,
+        mode: 'стандарт',
+        map: 'prokhorovka',
+        tool: 'pen',
+        color: '#ff0000',
+        lineWidth: 3,
+        icon: null,
+        isDrawing: false,
+        startX: 0,
+        startY: 0,
+        currentX: 0,
+        currentY: 0,
+        drawings: [],
+        players: new Set(),
+        ws: null,
+        myPlayerId: null,
+        isCreator: false,
+    };
 
-        const newRoomName = document.getElementById('new-room-name');
-        const newRoomPass = document.getElementById('new-room-password');
-        const createBtn = document.getElementById('create-room-btn');
+    const loginScreen = document.getElementById('login');
+    const gameScreen = document.getElementById('game');
+    const roomListEl = document.getElementById('room-list');
+    const searchInput = document.getElementById('search-input');
+    const createError = document.getElementById('create-error');
+    const joinError = document.getElementById('join-error');
+    const statusMsg = document.getElementById('status-msg');
 
-        const currentRoomNameSpan = document.getElementById('current-room-name');
-        const modeSelect = document.getElementById('mode-select');
-        const mapSelect = document.getElementById('map-select');
-        const applyMapBtn = document.getElementById('apply-map-btn');
-        const leaveBtn = document.getElementById('leave-room-btn');
-        const playerCountSpan = document.getElementById('player-count');
+    const newRoomName = document.getElementById('new-room-name');
+    const newRoomPass = document.getElementById('new-room-password');
+    const createBtn = document.getElementById('create-room-btn');
 
-        const canvas = document.getElementById('map-canvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('canvas-container');
+    const currentRoomNameSpan = document.getElementById('current-room-name');
+    const modeSelect = document.getElementById('mode-select');
+    const mapSelect = document.getElementById('map-select');
+    const applyMapBtn = document.getElementById('apply-map-btn');
+    const leaveBtn = document.getElementById('leave-room-btn');
+    const playerCountSpan = document.getElementById('player-count');
 
-        const toolBtns = document.querySelectorAll('.tool-btn');
-        const colorPicker = document.getElementById('color-picker');
-        const lineWidthInput = document.getElementById('line-width');
-        const iconBtns = document.querySelectorAll('.icon-btn');
-        const clearBtn = document.getElementById('clear-btn');
+    const canvas = document.getElementById('map-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvas-container');
 
-        // ---------- Управление комнатами (локальное хранилище) ----------
-        function getRooms() {
-            try {
-                return JSON.parse(localStorage.getItem('wot_rooms') || '[]');
-            } catch { return []; }
+    const toolBtns = document.querySelectorAll('.tool-btn');
+    const colorPicker = document.getElementById('color-picker');
+    const lineWidthInput = document.getElementById('line-width');
+    const iconBtns = document.querySelectorAll('.icon-btn');
+    const clearBtn = document.getElementById('clear-btn');
+
+    function init() {
+        state.myPlayerId = localStorage.getItem('wot_player_id');
+        if (!state.myPlayerId) {
+            state.myPlayerId = 'player_' + Math.random().toString(36).substr(2, 8);
+            localStorage.setItem('wot_player_id', state.myPlayerId);
         }
-        function saveRooms(rooms) {
-            localStorage.setItem('wot_rooms', JSON.stringify(rooms));
-        }
+        connectWebSocket();
+        createBtn.addEventListener('click', onCreateRoom);
+        leaveBtn.addEventListener('click', onLeaveRoom);
+        applyMapBtn.addEventListener('click', onApplyMap);
+        searchInput.addEventListener('input', renderRoomList);
 
-        function renderRoomList() {
-            const rooms = getRooms();
-            roomListEl.innerHTML = '';
-            if (rooms.length === 0) {
-                roomListEl.innerHTML = '<div style="color:#888;text-align:center;padding:10px;">Нет доступных комнат</div>';
-                return;
-            }
-            rooms.forEach((room, index) => {
-                const div = document.createElement('div');
-                div.className = 'room-item';
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'name';
-                nameSpan.textContent = room.name + (room.password ? ' 🔒' : '');
-                const joinBtn = document.createElement('button');
-                joinBtn.className = 'join-btn';
-                joinBtn.textContent = 'Войти';
-                joinBtn.addEventListener('click', () => {
-                    if (room.password) {
-                        const pwd = prompt('Введите пароль для комнаты "' + room.name + '":');
-                        if (pwd !== room.password) {
-                            joinError.textContent = 'Неверный пароль';
-                            return;
-                        }
-                    }
-                    joinRoom(room.name);
-                });
-                div.appendChild(nameSpan);
-                div.appendChild(joinBtn);
-                roomListEl.appendChild(div);
-            });
-        }
-
-        // Создание комнаты
-        createBtn.addEventListener('click', () => {
-            const name = newRoomName.value.trim();
-            const password = newRoomPass.value.trim() || null;
-            if (!name) {
-                createError.textContent = 'Введите название комнаты';
-                return;
-            }
-            const rooms = getRooms();
-            if (rooms.some(r => r.name === name)) {
-                createError.textContent = 'Комната с таким именем уже существует';
-                return;
-            }
-            rooms.push({ name, password });
-            saveRooms(rooms);
-            renderRoomList();
-            newRoomName.value = '';
-            newRoomPass.value = '';
-            createError.textContent = '';
-            // Автоматически войти
-            joinRoom(name);
-        });
-
-        // Вход в комнату
-        function joinRoom(roomName) {
-            state.roomName = roomName;
-            state.roomPassword = null; // уже проверено
-            // Переключаем экран
-            loginScreen.style.display = 'none';
-            gameScreen.style.display = 'flex';
-            currentRoomNameSpan.textContent = roomName;
-            // Инициализируем BroadcastChannel
-            if (state.channel) state.channel.close();
-            state.channel = new BroadcastChannel('wot_tactics_' + roomName);
-            state.channel.onmessage = handleChannelMessage;
-            // Отправляем приветствие
-            state.channel.postMessage({ type: 'join', playerId: getPlayerId() });
-            // Обновляем счётчик (запросим у других)
-            requestPlayerCount();
-
-            // Загружаем карту по умолчанию
-            loadMap(state.map, state.mode);
-            // Очищаем рисунки при входе? Лучше загрузить сохранённые из localStorage для этой комнаты
-            loadDrawingsFromStorage();
-            renderDrawings();
-        }
-
-        function getPlayerId() {
-            let id = localStorage.getItem('wot_player_id');
-            if (!id) {
-                id = 'player_' + Math.random().toString(36).substr(2, 6);
-                localStorage.setItem('wot_player_id', id);
-            }
-            return id;
-        }
-
-        function requestPlayerCount() {
-            if (state.channel) {
-                state.channel.postMessage({ type: 'count_request' });
-            }
-        }
-
-        // Обработка сообщений канала
-        function handleChannelMessage(e) {
-            const data = e.data;
-            if (!data) return;
-            switch (data.type) {
-                case 'join':
-                    state.players.add(data.playerId);
-                    updatePlayerCount();
-                    break;
-                case 'count_request':
-                    // ответим своим join'ом
-                    state.channel.postMessage({ type: 'join', playerId: getPlayerId() });
-                    break;
-                case 'draw':
-                    // Добавляем рисунок в массив и перерисовываем
-                    state.drawings.push(data.payload);
-                    saveDrawingsToStorage();
-                    renderDrawings();
-                    break;
-                case 'clear':
-                    state.drawings = [];
-                    saveDrawingsToStorage();
-                    renderDrawings();
-                    break;
-                case 'load_map':
-                    // При смене карты или режима
-                    state.map = data.map;
-                    state.mode = data.mode;
-                    loadMap(state.map, state.mode);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        function updatePlayerCount() {
-            playerCountSpan.textContent = '👥 ' + state.players.size;
-        }
-
-        // ---------- Рисование ----------
-        function loadMap(mapName, mode) {
-            // Загружаем изображение карты (заглушка — рисуем сетку с названием)
-            // В реальности загружаем картинку карты.
-            const img = new Image();
-            // Используем официальные мини-карты с wot (пример)
-            const url = `https://static.wotgarage.net/wot/8.5/maps/${mapName}.jpg`;
-            img.crossOrigin = 'anonymous';
-            img.onload = function() {
-                drawMapImage(img);
-            };
-            img.onerror = function() {
-                // Если картинка не загрузилась, рисуем заглушку
-                drawFallbackMap(mapName, mode);
-            };
-            img.src = url;
-            // Также отправляем всем, что сменили карту
-            if (state.channel) {
-                state.channel.postMessage({
-                    type: 'load_map',
-                    map: mapName,
-                    mode: mode
-                });
-            }
-        }
-
-        function drawMapImage(img) {
-            const rect = container.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = rect.height + 'px';
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            ctx.clearRect(0, 0, rect.width, rect.height);
-            // Рисуем картинку с сохранением пропорций
-            const aspect = img.width / img.height;
-            let drawW = rect.width;
-            let drawH = rect.width / aspect;
-            if (drawH > rect.height) {
-                drawH = rect.height;
-                drawW = rect.height * aspect;
-            }
-            const offsetX = (rect.width - drawW) / 2;
-            const offsetY = (rect.height - drawH) / 2;
-            ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
-            // Сохраним для рисования поверх
-            renderDrawings();
-        }
-
-        function drawFallbackMap(mapName, mode) {
-            const rect = container.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = rect.height + 'px';
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            ctx.clearRect(0, 0, rect.width, rect.height);
-            // Серая сетка
-            ctx.fillStyle = '#2a2a4a';
-            ctx.fillRect(0, 0, rect.width, rect.height);
-            ctx.strokeStyle = '#444';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 10; i++) {
-                const x = (i / 10) * rect.width;
-                const y = (i / 10) * rect.height;
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, rect.height);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(rect.width, y);
-                ctx.stroke();
-            }
-            ctx.fillStyle = '#aaa';
-            ctx.font = '20px sans-serif';
-            ctx.fillText(`Карта: ${mapName} (режим: ${mode})`, 20, 40);
-            // Отметим базы в зависимости от режима
-            ctx.fillStyle = '#f5a623';
-            ctx.font = '16px sans-serif';
-            if (mode === 'стандарт' || mode === 'встречный') {
-                ctx.fillText('🏴 База 1', 50, rect.height - 50);
-                ctx.fillText('🏴 База 2', rect.width - 120, 50);
-            } else if (mode === 'штурм') {
-                ctx.fillText('🏴 Защита', 50, 50);
-                ctx.fillText('🏴 Атака', rect.width - 120, rect.height - 50);
-            }
-            renderDrawings();
-        }
-
-        // ---------- Хранение рисунков ----------
-        function getStorageKey() {
-            return 'wot_drawings_' + state.roomName;
-        }
-        function saveDrawingsToStorage() {
-            if (!state.roomName) return;
-            try {
-                localStorage.setItem(getStorageKey(), JSON.stringify(state.drawings));
-            } catch(e) {}
-        }
-        function loadDrawingsFromStorage() {
-            if (!state.roomName) return;
-            try {
-                const data = localStorage.getItem(getStorageKey());
-                if (data) state.drawings = JSON.parse(data);
-                else state.drawings = [];
-            } catch(e) { state.drawings = []; }
-        }
-
-        // ---------- Отрисовка всех рисунков ----------
-        function renderDrawings() {
-            const rect = container.getBoundingClientRect();
-            // Перерисовываем карту (заново загружаем картинку? лучше сохранить предыдущий слой)
-            // Для простоты загружаем карту заново (но это медленно). Лучше использовать отдельный слой или хранить ImageData.
-            // Здесь упростим: загружаем карту, потом поверх рисуем наши рисунки.
-            // Однако чтобы не перезагружать картинку каждый раз, сохраним её в переменной.
-            // Сделаем кеш.
-            loadMap(state.map, state.mode); // Это перерисует карту, но затем мы нарисуем сверху рисунки.
-            // Но loadMap асинхронна, поэтому нужно после загрузки карты нарисовать рисунки.
-            // Реализуем через колбэк.
-        }
-
-        // Переопределим функцию отрисовки с учётом рисунков.
-        // Сделаем так: функция drawWithDrawings(img) будет вызываться после загрузки картинки.
-        let lastImage = null;
-        const originalLoadMap = loadMap;
-        loadMap = function(mapName, mode) {
-            // Сохраняем параметры
-            state.map = mapName;
-            state.mode = mode;
-            const img = new Image();
-            const url = `https://static.wotgarage.net/wot/8.5/maps/${mapName}.jpg`;
-            img.crossOrigin = 'anonymous';
-            img.onload = function() {
-                lastImage = img;
-                drawFullScene(img);
-            };
-            img.onerror = function() {
-                lastImage = null;
-                drawFallbackScene(mapName, mode);
-            };
-            img.src = url;
-        };
-
-        function drawFullScene(img) {
-            const rect = container.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = rect.height + 'px';
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            ctx.clearRect(0, 0, rect.width, rect.height);
-            // Рисуем карту
-            const aspect = img.width / img.height;
-            let drawW = rect.width;
-            let drawH = rect.width / aspect;
-            if (drawH > rect.height) {
-                drawH = rect.height;
-                drawW = rect.height * aspect;
-            }
-            const offsetX = (rect.width - drawW) / 2;
-            const offsetY = (rect.height - drawH) / 2;
-            ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
-            // Рисуем все сохранённые объекты поверх
-            drawAllDrawings(rect);
-        }
-
-        function drawFallbackScene(mapName, mode) {
-            const rect = container.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = rect.height + 'px';
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            ctx.clearRect(0, 0, rect.width, rect.height);
-            ctx.fillStyle = '#2a2a4a';
-            ctx.fillRect(0, 0, rect.width, rect.height);
-            // сетка
-            ctx.strokeStyle = '#444';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 10; i++) {
-                const x = (i / 10) * rect.width;
-                const y = (i / 10) * rect.height;
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, rect.height);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(rect.width, y);
-                ctx.stroke();
-            }
-            ctx.fillStyle = '#aaa';
-            ctx.font = '20px sans-serif';
-            ctx.fillText(`Карта: ${mapName} (режим: ${mode})`, 20, 40);
-            if (mode === 'стандарт' || mode === 'встречный') {
-                ctx.fillStyle = '#f5a623';
-                ctx.fillText('🏴 База 1', 50, rect.height - 50);
-                ctx.fillText('🏴 База 2', rect.width - 120, 50);
-            } else if (mode === 'штурм') {
-                ctx.fillStyle = '#f5a623';
-                ctx.fillText('🏴 Защита', 50, 50);
-                ctx.fillText('🏴 Атака', rect.width - 120, rect.height - 50);
-            }
-            drawAllDrawings(rect);
-        }
-
-        function drawAllDrawings(rect) {
-            // Рисуем все элементы из state.drawings
-            state.drawings.forEach(item => {
-                if (item.type === 'icon') {
-                    drawIcon(item, rect);
-                } else {
-                    drawShape(item, rect);
-                }
-            });
-        }
-
-        // Вспомогательные функции для рисования фигур и иконок
-        function drawShape(item, rect) {
-            const { tool, color, lineWidth, x1, y1, x2, y2 } = item;
-            ctx.save();
-            ctx.strokeStyle = color;
-            ctx.fillStyle = color;
-            ctx.lineWidth = lineWidth || 2;
-            ctx.beginPath();
-            switch (tool) {
-                case 'pen':
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.stroke();
-                    break;
-                case 'rect':
-                    const rx = Math.min(x1, x2);
-                    const ry = Math.min(y1, y2);
-                    const rw = Math.abs(x2 - x1);
-                    const rh = Math.abs(y2 - y1);
-                    ctx.strokeRect(rx, ry, rw, rh);
-                    break;
-                case 'circle':
-                    const cx = (x1 + x2) / 2;
-                    const cy = (y1 + y2) / 2;
-                    const rad = Math.hypot(x2 - x1, y2 - y1) / 2;
-                    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-                    ctx.stroke();
-                    break;
-                case 'arrow':
-                    // рисуем стрелку от (x1,y1) к (x2,y2)
-                    const angle = Math.atan2(y2 - y1, x2 - x1);
-                    const headLen = 12;
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.stroke();
-                    // наконечник
-                    ctx.beginPath();
-                    ctx.moveTo(x2, y2);
-                    ctx.lineTo(x2 - headLen * Math.cos(angle - 0.4), y2 - headLen * Math.sin(angle - 0.4));
-                    ctx.moveTo(x2, y2);
-                    ctx.lineTo(x2 - headLen * Math.cos(angle + 0.4), y2 - headLen * Math.sin(angle + 0.4));
-                    ctx.stroke();
-                    break;
-                default: break;
-            }
-            ctx.restore();
-        }
-
-        function drawIcon(item, rect) {
-            const { icon, x, y, color } = item;
-            ctx.save();
-            ctx.font = '32px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            let symbol = '';
-            switch (icon) {
-                case 'lt': symbol = '🚗'; break;
-                case 'mt': symbol = '🚙'; break;
-                case 'ht': symbol = '🚛'; break;
-                case 'td': symbol = '🚜'; break;
-                case 'spg': symbol = '💥'; break;
-                default: symbol = '?';
-            }
-            // обводка для читаемости
-            ctx.shadowColor = 'black';
-            ctx.shadowBlur = 8;
-            ctx.fillStyle = color || '#ffffff';
-            ctx.fillText(symbol, x, y);
-            ctx.restore();
-        }
-
-        // ---------- Обработка событий мыши на холсте ----------
-        function getCanvasCoords(e) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / (rect.width * window.devicePixelRatio);
-            const scaleY = canvas.height / (rect.height * window.devicePixelRatio);
-            const clientX = e.clientX || e.touches[0].clientX;
-            const clientY = e.clientY || e.touches[0].clientY;
-            // Возвращаем координаты в пикселях экрана (как на canvas без учёта scale)
-            return {
-                x: (clientX - rect.left) * (canvas.width / (rect.width * window.devicePixelRatio)) / window.devicePixelRatio,
-                y: (clientY - rect.top) * (canvas.height / (rect.height * window.devicePixelRatio)) / window.devicePixelRatio
-            };
-        }
-
-        function startDraw(e) {
-            e.preventDefault();
-            const { x, y } = getCanvasCoords(e);
-            state.isDrawing = true;
-            state.startX = x;
-            state.startY = y;
-        }
-
-        function drawMove(e) {
-            e.preventDefault();
-            if (!state.isDrawing) return;
-            const { x, y } = getCanvasCoords(e);
-            // Если инструмент — иконка, то при отпускании мыши поставим иконку, а во время движения ничего не делаем
-            if (state.icon) {
-                // ничего не делаем
-                return;
-            }
-            // Для остальных инструментов рисуем предварительный просмотр?
-            // Пока просто сохраняем конечную точку для завершения
-            state.currentX = x;
-            state.currentY = y;
-        }
-
-        function endDraw(e) {
-            e.preventDefault();
-            if (!state.isDrawing) return;
-            state.isDrawing = false;
-            const { x, y } = getCanvasCoords(e);
-            const startX = state.startX;
-            const startY = state.startY;
-
-            // Если выбран режим иконки
-            if (state.icon) {
-                // Добавляем иконку
-                const item = {
-                    type: 'icon',
-                    icon: state.icon,
-                    x: x,
-                    y: y,
-                    color: state.color
-                };
-                state.drawings.push(item);
-                saveDrawingsToStorage();
-                renderDrawings();
-                // Отправить по каналу
-                if (state.channel) {
-                    state.channel.postMessage({ type: 'draw', payload: item });
-                }
-                return;
-            }
-
-            // Игнорируем слишком короткие движения
-            if (Math.hypot(x - startX, y - startY) < 3) return;
-
-            const item = {
-                type: 'shape',
-                tool: state.tool,
-                color: state.color,
-                lineWidth: state.lineWidth,
-                x1: startX,
-                y1: startY,
-                x2: x,
-                y2: y
-            };
-            state.drawings.push(item);
-            saveDrawingsToStorage();
-            renderDrawings();
-            if (state.channel) {
-                state.channel.postMessage({ type: 'draw', payload: item });
-            }
-        }
-
-        // Привязка событий к canvas
-        canvas.addEventListener('mousedown', startDraw);
-        canvas.addEventListener('mousemove', drawMove);
-        canvas.addEventListener('mouseup', endDraw);
-        canvas.addEventListener('mouseleave', endDraw);
-        // Для touch
-        canvas.addEventListener('touchstart', startDraw, { passive: false });
-        canvas.addEventListener('touchmove', drawMove, { passive: false });
-        canvas.addEventListener('touchend', endDraw, { passive: false });
-
-        // ---------- Управление инструментами ----------
         toolBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 toolBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 state.tool = btn.dataset.tool;
-                state.icon = null; // снимаем выбор иконки
+                state.icon = null;
                 iconBtns.forEach(b => b.classList.remove('active'));
             });
         });
-
         iconBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 iconBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 state.icon = btn.dataset.icon;
-                // Отключаем инструмент рисования (выделяем иконку)
                 toolBtns.forEach(b => b.classList.remove('active'));
             });
         });
+        colorPicker.addEventListener('input', (e) => state.color = e.target.value);
+        lineWidthInput.addEventListener('input', (e) => state.lineWidth = parseInt(e.target.value, 10));
+        clearBtn.addEventListener('click', onClearDrawings);
 
-        colorPicker.addEventListener('input', (e) => {
-            state.color = e.target.value;
-        });
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', drawMove);
+        canvas.addEventListener('mouseup', endDraw);
+        canvas.addEventListener('mouseleave', endDraw);
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', drawMove, { passive: false });
+        canvas.addEventListener('touchend', endDraw, { passive: false });
 
-        lineWidthInput.addEventListener('input', (e) => {
-            state.lineWidth = parseInt(e.target.value, 10);
-        });
-
-        clearBtn.addEventListener('click', () => {
-            if (confirm('Очистить все рисунки?')) {
-                state.drawings = [];
-                saveDrawingsToStorage();
-                renderDrawings();
-                if (state.channel) {
-                    state.channel.postMessage({ type: 'clear' });
-                }
-            }
-        });
-
-        // ---------- Смена карты / режима ----------
-        applyMapBtn.addEventListener('click', () => {
-            const mode = modeSelect.value;
-            const map = mapSelect.value;
-            state.mode = mode;
-            state.map = map;
-            loadMap(map, mode);
-            // Оповещаем всех
-            if (state.channel) {
-                state.channel.postMessage({
-                    type: 'load_map',
-                    map: map,
-                    mode: mode
-                });
-            }
-        });
-
-        // ---------- Выход из комнаты ----------
-        leaveBtn.addEventListener('click', () => {
-            if (state.channel) {
-                state.channel.close();
-                state.channel = null;
-            }
-            state.roomName = null;
-            state.drawings = [];
-            gameScreen.style.display = 'none';
-            loginScreen.style.display = 'flex';
-            renderRoomList();
-        });
-
-        // ---------- Инициализация ----------
-        renderRoomList();
-
-        // Автоматическое обновление размера холста при изменении размера окна
         window.addEventListener('resize', () => {
-            if (state.roomName) {
-                loadMap(state.map, state.mode);
-            }
+            if (state.roomName) loadMap(state.map, state.mode);
         });
+    }
 
-        // Если комната уже создана (для перезагрузки) - но не нужно.
+    function connectWebSocket() {
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
+        state.ws = new WebSocket(WS_URL);
+        state.ws.onopen = () => {
+            statusMsg.textContent = 'Подключено к серверу';
+            state.ws.send(JSON.stringify({ type: 'get_rooms' }));
+        };
+        state.ws.onmessage = (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                handleServerMessage(data);
+            } catch (err) {
+                console.error('Ошибка парсинга сообщения', err);
+            }
+        };
+        state.ws.onerror = (err) => {
+            statusMsg.textContent = 'Ошибка соединения с сервером';
+            console.error('WebSocket error', err);
+        };
+        state.ws.onclose = () => {
+            statusMsg.textContent = 'Соединение потеряно. Переподключение через 3 сек...';
+            setTimeout(connectWebSocket, 3000);
+        };
+    }
 
-        console.log('WoT Tactics запущен!');
-    })();
+    function sendToServer(msg) {
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            state.ws.send(JSON.stringify(msg));
+        } else {
+            console.warn('WebSocket не готов');
+        }
+    }
+
+    let roomsCache = [];
+
+    function handleServerMessage(data) {
+        switch (data.type) {
+            case 'room_list':
+                roomsCache = data.rooms;
+                renderRoomList();
+                break;
+            case 'create_success':
+                createError.textContent = '';
+                joinRoom(data.roomName);
+                break;
+            case 'delete_success':
+                break;
+            case 'join_success':
+                state.roomName = data.roomName;
+                state.map = data.map;
+                state.mode = data.mode;
+                state.drawings = data.drawings || [];
+                const room = roomsCache.find(r => r.name === data.roomName);
+                state.isCreator = room ? room.creatorId === state.myPlayerId : false;
+                showGameScreen();
+                loadMap(state.map, state.mode);
+                renderDrawings();
+                break;
+            case 'player_joined':
+                state.players.add(data.playerId);
+                updatePlayerCount();
+                break;
+            case 'draw':
+                state.drawings.push(data.payload);
+                renderDrawings();
+                break;
+            case 'clear':
+                state.drawings = [];
+                renderDrawings();
+                break;
+            case 'load_map':
+                state.map = data.map;
+                state.mode = data.mode;
+                loadMap(state.map, state.mode);
+                break;
+            case 'room_closed':
+                alert('Комната была удалена создателем');
+                onLeaveRoom();
+                break;
+            case 'error':
+                const errMsg = data.message || 'Ошибка';
+                if (document.getElementById('login').style.display !== 'none') {
+                    createError.textContent = errMsg;
+                    joinError.textContent = errMsg;
+                } else {
+                    alert('Ошибка: ' + errMsg);
+                }
+                break;
+            default:
+                console.log('Неизвестное сообщение:', data);
+        }
+    }
+
+    function onCreateRoom() {
+        const name = newRoomName.value.trim();
+        const password = newRoomPass.value.trim() || null;
+        if (!name) {
+            createError.textContent = 'Введите название комнаты';
+            return;
+        }
+        createError.textContent = '';
+        sendToServer({
+            type: 'create_room',
+            name,
+            password,
+            creatorId: state.myPlayerId
+        });
+    }
+
+    function joinRoom(roomName) {
+        sendToServer({
+            type: 'join_room',
+            roomName,
+            playerId: state.myPlayerId
+        });
+    }
+
+    function deleteRoom(roomName) {
+        if (!confirm(`Удалить комнату "${roomName}"?`)) return;
+        sendToServer({
+            type: 'delete_room',
+            roomName,
+            deleterId: state.myPlayerId
+        });
+    }
+
+    function onLeaveRoom() {
+        state.roomName = null;
+        state.drawings = [];
+        state.players = new Set();
+        gameScreen.style.display = 'none';
+        loginScreen.style.display = 'flex';
+        sendToServer({ type: 'get_rooms' });
+    }
+
+    function renderRoomList() {
+        const search = searchInput.value.toLowerCase().trim();
+        const filtered = roomsCache.filter(r => r.name.toLowerCase().includes(search));
+        roomListEl.innerHTML = '';
+        if (filtered.length === 0) {
+            roomListEl.innerHTML = '<div style="color:#888;text-align:center;padding:10px;">Нет комнат</div>';
+            return;
+        }
+        filtered.forEach(room => {
+            const div = document.createElement('div');
+            div.className = 'room-item';
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'name';
+            nameSpan.textContent = room.name + (room.hasPassword ? ' 🔒' : '');
+            const infoSpan = document.createElement('span');
+            infoSpan.className = 'info';
+            infoSpan.textContent = `👥 ${room.playerCount}`;
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            const joinBtn = document.createElement('button');
+            joinBtn.className = 'join-btn';
+            joinBtn.textContent = 'Войти';
+            joinBtn.addEventListener('click', () => {
+                if (room.hasPassword) {
+                    const pwd = prompt('Введите пароль:');
+                    if (pwd === null) return;
+                }
+                joinRoom(room.name);
+            });
+            actions.appendChild(joinBtn);
+
+            if (room.creatorId === state.myPlayerId) {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.textContent = '🗑️';
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteRoom(room.name);
+                });
+                actions.appendChild(delBtn);
+            }
+
+            const left = document.createElement('div');
+            left.style.display = 'flex';
+            left.style.alignItems = 'center';
+            left.style.gap = '8px';
+            left.appendChild(nameSpan);
+            left.appendChild(infoSpan);
+
+            div.appendChild(left);
+            div.appendChild(actions);
+            roomListEl.appendChild(div);
+        });
+    }
+
+    function showGameScreen() {
+        loginScreen.style.display = 'none';
+        gameScreen.style.display = 'flex';
+        currentRoomNameSpan.textContent = state.roomName;
+        modeSelect.value = state.mode;
+        mapSelect.value = state.map;
+        updatePlayerCount();
+    }
+
+    function updatePlayerCount() {
+        playerCountSpan.textContent = '👥 ' + state.players.size;
+    }
+
+    function loadMap(mapName, mode) {
+        state.map = mapName;
+        state.mode = mode;
+        const img = new Image();
+        const url = `https://static.wotgarage.net/wot/8.5/maps/${mapName}.jpg`;
+        img.crossOrigin = 'anonymous';
+        img.onload = () => drawFullScene(img);
+        img.onerror = () => drawFallbackScene(mapName, mode);
+        img.src = url;
+    }
+
+    function drawFullScene(img) {
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        const aspect = img.width / img.height;
+        let drawW = rect.width;
+        let drawH = rect.width / aspect;
+        if (drawH > rect.height) { drawH = rect.height; drawW = rect.height * aspect; }
+        const offsetX = (rect.width - drawW) / 2;
+        const offsetY = (rect.height - drawH) / 2;
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+        drawAllDrawings(rect);
+    }
+
+    function drawFallbackScene(mapName, mode) {
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        ctx.fillStyle = '#2a2a4a';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 10; i++) {
+            const x = (i / 10) * rect.width;
+            const y = (i / 10) * rect.height;
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, rect.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(rect.width, y); ctx.stroke();
+        }
+        ctx.fillStyle = '#aaa';
+        ctx.font = '20px sans-serif';
+        ctx.fillText(`Карта: ${mapName} (${mode})`, 20, 40);
+        ctx.fillStyle = '#f5a623';
+        ctx.font = '16px sans-serif';
+        if (mode === 'стандарт' || mode === 'встречный') {
+            ctx.fillText('🏴 База 1', 50, rect.height - 50);
+            ctx.fillText('🏴 База 2', rect.width - 120, 50);
+        } else if (mode === 'штурм') {
+            ctx.fillText('🏴 Защита', 50, 50);
+            ctx.fillText('🏴 Атака', rect.width - 120, rect.height - 50);
+        }
+        drawAllDrawings(rect);
+    }
+
+    function drawAllDrawings(rect) {
+        state.drawings.forEach(item => {
+            if (item.type === 'icon') drawIcon(item, rect);
+            else drawShape(item, rect);
+        });
+    }
+
+    function drawShape(item, rect) {
+        const { tool, color, lineWidth, x1, y1, x2, y2 } = item;
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = lineWidth || 2;
+        ctx.beginPath();
+        switch (tool) {
+            case 'pen':
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                break;
+            case 'rect':
+                const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
+                const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
+                ctx.strokeRect(rx, ry, rw, rh);
+                break;
+            case 'circle':
+                const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+                const rad = Math.hypot(x2 - x1, y2 - y1) / 2;
+                ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
+            case 'arrow':
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+                const headLen = 12;
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x2, y2);
+                ctx.lineTo(x2 - headLen * Math.cos(angle - 0.4), y2 - headLen * Math.sin(angle - 0.4));
+                ctx.moveTo(x2, y2);
+                ctx.lineTo(x2 - headLen * Math.cos(angle + 0.4), y2 - headLen * Math.sin(angle + 0.4));
+                ctx.stroke();
+                break;
+        }
+        ctx.restore();
+    }
+
+    function drawIcon(item, rect) {
+        const { icon, x, y, color } = item;
+        ctx.save();
+        ctx.font = '32px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const symbols = { lt:'🚗', mt:'🚙', ht:'🚛', td:'🚜', spg:'💥' };
+        const symbol = symbols[icon] || '?';
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = color || '#ffffff';
+        ctx.fillText(symbol, x, y);
+        ctx.restore();
+    }
+
+    function renderDrawings() {
+        loadMap(state.map, state.mode);
+    }
+
+    function getCanvasCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        if (clientX == null) return { x: 0, y: 0 };
+        const scaleX = canvas.width / (rect.width * window.devicePixelRatio);
+        const scaleY = canvas.height / (rect.height * window.devicePixelRatio);
+        return {
+            x: (clientX - rect.left) * scaleX / window.devicePixelRatio,
+            y: (clientY - rect.top) * scaleY / window.devicePixelRatio
+        };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        state.isDrawing = true;
+        state.startX = x;
+        state.startY = y;
+    }
+
+    function drawMove(e) {
+        e.preventDefault();
+        if (!state.isDrawing) return;
+        const { x, y } = getCanvasCoords(e);
+        state.currentX = x;
+        state.currentY = y;
+    }
+
+    function endDraw(e) {
+        e.preventDefault();
+        if (!state.isDrawing) return;
+        state.isDrawing = false;
+        const { x, y } = getCanvasCoords(e);
+        const startX = state.startX;
+        const startY = state.startY;
+
+        if (state.icon) {
+            const item = { type: 'icon', icon: state.icon, x, y, color: state.color };
+            state.drawings.push(item);
+            sendToServer({ type: 'draw', payload: item });
+            renderDrawings();
+            return;
+        }
+
+        if (Math.hypot(x - startX, y - startY) < 3) return;
+
+        const item = {
+            type: 'shape',
+            tool: state.tool,
+            color: state.color,
+            lineWidth: state.lineWidth,
+            x1: startX,
+            y1: startY,
+            x2: x,
+            y2: y
+        };
+        state.drawings.push(item);
+        sendToServer({ type: 'draw', payload: item });
+        renderDrawings();
+    }
+
+    function onApplyMap() {
+        const mode = modeSelect.value;
+        const map = mapSelect.value;
+        sendToServer({ type: 'load_map', map, mode });
+        state.map = map;
+        state.mode = mode;
+        loadMap(map, mode);
+    }
+
+    function onClearDrawings() {
+        if (!confirm('Очистить все рисунки?')) return;
+        state.drawings = [];
+        sendToServer({ type: 'clear' });
+        renderDrawings();
+    }
+
+    init();
+})();
 </script>
 </body>
 </html>
