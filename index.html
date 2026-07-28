@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>WoT Tactics Online</title>
+    <title>WoT Tactics</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
@@ -42,7 +42,7 @@
         #tools .color-picker { width: 100%; height: 30px; border: none; background: transparent; cursor: pointer; }
         #tools input[type="range"] { width: 100%; accent-color: #e94560; }
         #tools .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
-        #tools .icon-btn { width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        #tools .icon-btn { width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; background-size: contain; background-position: center; background-repeat: no-repeat; }
         #tools .icon-btn.active { border-color: #e94560; background-color: #3a3a7a; }
         #clear-btn { margin-top: 8px; background: #c0392b; border: none; color: #fff; padding: 6px; border-radius: 4px; cursor: pointer; }
         @media (max-width: 700px) { #tools { width: 140px; padding: 6px; } #tools .tool-btn { width: 28px; height: 28px; font-size: 1rem; } #tools .icon-btn { width: 34px; height: 34px; } }
@@ -70,11 +70,7 @@
     <div id="game">
         <div id="top-bar">
             <span style="font-weight:bold;">Комната: <span id="current-room-name">—</span></span>
-            <select id="mode-select">
-                   <option value="standard">Стандартный бой</option>
-                   <option value="meeting">Встречный бой</option>
-                   <option value="assault">Штурм</option>
-            </select>
+            <!-- Убираем выбор режима, оставляем только выбор карты -->
             <select id="map-select"><option value="">Выберите карту</option></select>
             <button id="apply-map-btn">Применить</button>
             <span class="room-info" id="player-count">👥 1</span>
@@ -84,7 +80,7 @@
             <div id="tools">
                 <label>🔧 Инструмент</label>
                 <div class="tool-group">
-                    <button class="tool-btn active" data-tool="freehand">🖊️</button> <!-- кисть первая -->
+                    <button class="tool-btn active" data-tool="freehand">🖊️</button>
                     <button class="tool-btn" data-tool="pen">✏️</button>
                     <button class="tool-btn" data-tool="rect">▭</button>
                     <button class="tool-btn" data-tool="circle">●</button>
@@ -96,9 +92,7 @@
                 <label>📏 Толщина</label>
                 <input type="range" id="line-width" min="1" max="20" value="3">
                 <label>🚀 Иконки танков</label>
-                <div class="icon-grid" id="icon-grid">
-                    <!-- будут загружены через JS из файлов -->
-                </div>
+                <div class="icon-grid" id="icon-grid"></div>
                 <button id="clear-btn">🗑️ Очистить всё</button>
             </div>
             <div id="canvas-container">
@@ -111,26 +105,27 @@
 (function() {
     'use strict';
 
-    // ====== НАСТРОЙКИ ======
-    const WS_URL = 'wss://wot-tactics-server.onrender.com'; // ваш сервер
-    const MAPS_JSON_URL = 'maps.json';
-    const ICONS_PATH = 'icons/'; // папка с иконками
+    // ========== 1. НАСТРОЙКИ ==========
+    const WS_URL = 'wss://wot-tactics-server.onrender.com'; // ваш WebSocket-сервер
+    const ICONS_PATH = 'icons/';
+    const MAPS_PATH = 'maps/';
 
-    // Список классов танков
-    const TANK_CLASSES = [
-        { id: 'lt', label: 'Лёгкий' },
-        { id: 'mt', label: 'Средний' },
-        { id: 'ht', label: 'Тяжёлый' },
-        { id: 'td', label: 'ПТ-САУ' },
-        { id: 'spg', label: 'Артиллерия' }
+    // ========== 2. СПИСОК КАРТ (добавляйте сюда свои) ==========
+    const MAPS = [
+        { name: 'Прохоровка', file: 'prokhorovka' },
+        { name: 'Рудники', file: 'mines' },
+        { name: 'Химмельсдорф', file: 'himmelsdorf' },
+        { name: 'Утёс', file: 'cliff' },
+        { name: 'Эрленберг', file: 'erlenberg' },
+        // Добавьте новые карты сюда, например:
+        // { name: 'Новая карта', file: 'newmap' }
     ];
 
-    // ====== СОСТОЯНИЕ ======
+    // ========== 3. СОСТОЯНИЕ ==========
     const state = {
         roomName: null,
-        mode: 'стандарт',
-        map: null,
-        tool: 'freehand', // теперь по умолчанию кисть
+        map: null,                // выбранная карта (имя файла без расширения)
+        tool: 'freehand',
         color: '#ff0000',
         lineWidth: 3,
         icon: null,
@@ -145,10 +140,9 @@
         selectedIconIndex: -1,
         dragOffsetX: 0, dragOffsetY: 0,
         isDragging: false,
-        mapsList: { 'стандарт': [], 'встречный': [], 'штурм': [] }
     };
 
-    // ====== DOM ======
+    // ========== 4. DOM ==========
     const loginScreen = document.getElementById('login');
     const gameScreen = document.getElementById('game');
     const roomListEl = document.getElementById('room-list');
@@ -160,7 +154,6 @@
     const newRoomPass = document.getElementById('new-room-password');
     const createBtn = document.getElementById('create-room-btn');
     const currentRoomNameSpan = document.getElementById('current-room-name');
-    const modeSelect = document.getElementById('mode-select');
     const mapSelect = document.getElementById('map-select');
     const applyMapBtn = document.getElementById('apply-map-btn');
     const leaveBtn = document.getElementById('leave-room-btn');
@@ -174,7 +167,15 @@
     const iconGrid = document.getElementById('icon-grid');
     const clearBtn = document.getElementById('clear-btn');
 
-    // ====== ЗАГРУЗКА ИКОНОК ======
+    // ========== 5. ЗАГРУЗКА ИКОНОК ==========
+    const TANK_CLASSES = [
+        { id: 'lt', label: 'Лёгкий' },
+        { id: 'mt', label: 'Средний' },
+        { id: 'ht', label: 'Тяжёлый' },
+        { id: 'td', label: 'ПТ-САУ' },
+        { id: 'spg', label: 'Артиллерия' }
+    ];
+
     function loadIcons() {
         iconGrid.innerHTML = '';
         TANK_CLASSES.forEach(cls => {
@@ -182,61 +183,39 @@
             btn.className = 'icon-btn';
             btn.dataset.icon = cls.id;
             btn.title = cls.label;
-            // Устанавливаем фоном картинку
             btn.style.backgroundImage = `url(${ICONS_PATH}${cls.id}.png)`;
             btn.style.backgroundColor = '#2a2a5a';
             btn.style.backgroundSize = 'contain';
             btn.style.backgroundPosition = 'center';
             btn.style.backgroundRepeat = 'no-repeat';
             btn.addEventListener('click', () => {
-                // Снимаем активность со всех иконок и инструментов
                 document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
                 toolBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 state.icon = cls.id;
-                state.tool = 'icon'; // специальный режим для вставки иконок
+                state.tool = 'icon';
                 canvas.style.cursor = 'crosshair';
             });
             iconGrid.appendChild(btn);
         });
     }
 
-    // ====== ЗАГРУЗКА СПИСКА КАРТ ======
-    async function loadMapsList() {
-        try {
-            const res = await fetch(MAPS_JSON_URL);
-            if (!res.ok) throw new Error('Не удалось загрузить maps.json');
-            const data = await res.json();
-            state.mapsList = data;
-            updateMapSelect(state.mode);
-        } catch (err) {
-            console.warn('Ошибка загрузки maps.json, используем стандартные карты', err);
-            state.mapsList = {
-                'стандарт': [{ name: 'Прохоровка', file: 'prokhorovka' }, { name: 'Рудники', file: 'mines' }],
-                'встречный': [{ name: 'Прохоровка', file: 'prokhorovka' }],
-                'штурм': [{ name: 'Утёс', file: 'cliff' }]
-            };
-            updateMapSelect(state.mode);
-        }
-    }
-
-    function updateMapSelect(mode) {
-        const maps = state.mapsList[mode] || [];
-        mapSelect.innerHTML = '';
-        if (maps.length === 0) {
-            mapSelect.innerHTML = '<option value="">Нет карт</option>';
-            return;
-        }
-        maps.forEach(m => {
+    // ========== 6. ЗАПОЛНЕНИЕ СПИСКА КАРТ ==========
+    function populateMapSelect() {
+        mapSelect.innerHTML = '<option value="">Выберите карту</option>';
+        MAPS.forEach(m => {
             const opt = document.createElement('option');
             opt.value = m.file;
             opt.textContent = m.name;
             mapSelect.appendChild(opt);
         });
-        mapSelect.value = maps[0].file;
+        // По умолчанию выбираем первую карту (если есть)
+        if (MAPS.length > 0) {
+            mapSelect.value = MAPS[0].file;
+        }
     }
 
-    // ====== ИНИЦИАЛИЗАЦИЯ ======
+    // ========== 7. ИНИЦИАЛИЗАЦИЯ ==========
     async function init() {
         state.myPlayerId = localStorage.getItem('wot_player_id');
         if (!state.myPlayerId) {
@@ -244,15 +223,13 @@
             localStorage.setItem('wot_player_id', state.myPlayerId);
         }
         loadIcons();
-        await loadMapsList();
+        populateMapSelect();
         connectWebSocket();
+
         createBtn.addEventListener('click', onCreateRoom);
         leaveBtn.addEventListener('click', onLeaveRoom);
         applyMapBtn.addEventListener('click', onApplyMap);
         searchInput.addEventListener('input', renderRoomList);
-        modeSelect.addEventListener('change', () => {
-            updateMapSelect(modeSelect.value);
-        });
 
         // Инструменты
         toolBtns.forEach(btn => {
@@ -279,11 +256,11 @@
         canvas.addEventListener('touchend', onTouchEnd, { passive: false });
 
         window.addEventListener('resize', () => {
-            if (state.roomName) loadMap(state.map, state.mode);
+            if (state.roomName && state.map) loadMap(state.map);
         });
     }
 
-    // ====== WEBSOCKET ======
+    // ========== 8. WEBSOCKET (без изменений) ==========
     function connectWebSocket() {
         if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
         state.ws = new WebSocket(WS_URL);
@@ -292,19 +269,11 @@
             state.ws.send(JSON.stringify({ type: 'get_rooms' }));
         };
         state.ws.onmessage = (e) => {
-            try {
-                const data = JSON.parse(e.data);
-                handleServerMessage(data);
-            } catch (err) {
-                console.error('Ошибка парсинга сообщения', err);
-            }
+            try { const data = JSON.parse(e.data); handleServerMessage(data); } catch(err) {}
         };
-        state.ws.onerror = (err) => {
-            statusMsg.textContent = 'Ошибка соединения с сервером';
-            console.error('WebSocket error', err);
-        };
+        state.ws.onerror = () => { statusMsg.textContent = 'Ошибка соединения'; };
         state.ws.onclose = () => {
-            statusMsg.textContent = 'Соединение потеряно. Переподключение через 3 сек...';
+            statusMsg.textContent = 'Соединение потеряно. Переподключение...';
             setTimeout(connectWebSocket, 3000);
         };
     }
@@ -312,8 +281,6 @@
     function sendToServer(msg) {
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
             state.ws.send(JSON.stringify(msg));
-        } else {
-            console.warn('WebSocket не готов');
         }
     }
 
@@ -333,13 +300,12 @@
                 break;
             case 'join_success':
                 state.roomName = data.roomName;
-                state.map = data.map;
-                state.mode = data.mode;
+                state.map = data.map || (MAPS.length > 0 ? MAPS[0].file : null);
                 state.drawings = data.drawings || [];
                 const room = roomsCache.find(r => r.name === data.roomName);
                 state.isCreator = room ? room.creatorId === state.myPlayerId : false;
                 showGameScreen();
-                loadMap(state.map, state.mode);
+                if (state.map) loadMap(state.map);
                 break;
             case 'player_joined':
                 state.players.add(data.playerId);
@@ -367,11 +333,10 @@
                 break;
             case 'load_map':
                 state.map = data.map;
-                state.mode = data.mode;
-                loadMap(state.map, state.mode);
+                loadMap(state.map);
                 break;
             case 'room_closed':
-                alert('Комната была удалена создателем');
+                alert('Комната удалена');
                 onLeaveRoom();
                 break;
             case 'error':
@@ -383,16 +348,15 @@
                     alert('Ошибка: ' + errMsg);
                 }
                 break;
-            default:
-                console.log('Неизвестное сообщение:', data);
+            default: break;
         }
     }
 
-    // ====== КОМНАТЫ ======
+    // ========== 9. КОМНАТЫ ==========
     function onCreateRoom() {
         const name = newRoomName.value.trim();
         const password = newRoomPass.value.trim() || null;
-        if (!name) { createError.textContent = 'Введите название комнаты'; return; }
+        if (!name) { createError.textContent = 'Введите название'; return; }
         createError.textContent = '';
         sendToServer({ type: 'create_room', name, password, creatorId: state.myPlayerId });
     }
@@ -402,7 +366,7 @@
     }
 
     function deleteRoom(roomName) {
-        if (!confirm(`Удалить комнату "${roomName}"?`)) return;
+        if (!confirm(`Удалить "${roomName}"?`)) return;
         sendToServer({ type: 'delete_room', roomName, deleterId: state.myPlayerId });
     }
 
@@ -467,14 +431,14 @@
         });
     }
 
-    // ====== ИГРОВОЙ ЭКРАН ======
+    // ========== 10. ИГРОВОЙ ЭКРАН ==========
     function showGameScreen() {
         loginScreen.style.display = 'none';
         gameScreen.style.display = 'flex';
         currentRoomNameSpan.textContent = state.roomName;
-        modeSelect.value = state.mode;
-        updateMapSelect(state.mode);
+        // Выбираем карту в select (если есть)
         if (state.map) mapSelect.value = state.map;
+        else if (MAPS.length > 0) mapSelect.value = MAPS[0].file;
         updatePlayerCount();
     }
 
@@ -482,20 +446,36 @@
         playerCountSpan.textContent = '👥 ' + state.players.size;
     }
 
-    // ====== КАРТЫ ======
-    function loadMap(mapName, mode) {
+    // ========== 11. ЗАГРУЗКА КАРТЫ (с автоопределением расширения) ==========
+    function loadMap(mapName) {
         if (!mapName) return;
         state.map = mapName;
-        state.mode = mode;
-        const maps = state.mapsList[mode] || [];
-        const found = maps.find(m => m.file === mapName);
-        const fileName = found ? found.file : mapName;
+        // Пробуем загрузить с разными расширениями
+        const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        let currentIndex = 0;
         const img = new Image();
-        const url = `maps/${mode}/${fileName}.jpg`;
         img.crossOrigin = 'anonymous';
-        img.onload = () => drawFullScene(img);
-        img.onerror = () => drawFallbackScene(mapName, mode);
-        img.src = url;
+
+        function tryLoad() {
+            if (currentIndex >= extensions.length) {
+                // Все расширения не подошли
+                drawFallbackScene(mapName);
+                return;
+            }
+            const url = `${MAPS_PATH}${mapName}${extensions[currentIndex]}`;
+            img.src = url;
+        }
+
+        img.onload = function() {
+            drawFullScene(img);
+        };
+
+        img.onerror = function() {
+            currentIndex++;
+            tryLoad();
+        };
+
+        tryLoad();
     }
 
     function drawFullScene(img) {
@@ -516,7 +496,7 @@
         drawAllDrawings(rect);
     }
 
-    function drawFallbackScene(mapName, mode) {
+    function drawFallbackScene(mapName) {
         const rect = container.getBoundingClientRect();
         canvas.width = rect.width * window.devicePixelRatio;
         canvas.height = rect.height * window.devicePixelRatio;
@@ -535,20 +515,11 @@
         }
         ctx.fillStyle = '#aaa';
         ctx.font = '20px sans-serif';
-        ctx.fillText(`Карта: ${mapName} (${mode})`, 20, 40);
-        ctx.fillStyle = '#f5a623';
-        ctx.font = '16px sans-serif';
-        if (mode === 'стандарт' || mode === 'встречный') {
-            ctx.fillText('🏴 База 1', 50, rect.height-50);
-            ctx.fillText('🏴 База 2', rect.width-120, 50);
-        } else if (mode === 'штурм') {
-            ctx.fillText('🏴 Защита', 50, 50);
-            ctx.fillText('🏴 Атака', rect.width-120, rect.height-50);
-        }
+        ctx.fillText(`Карта: ${mapName} (не найдена)`, 20, 40);
         drawAllDrawings(rect);
     }
 
-    // ====== ОТРИСОВКА ======
+    // ========== 12. ОТРИСОВКА ВСЕХ ЭЛЕМЕНТОВ (без изменений) ==========
     function drawAllDrawings(rect) {
         state.drawings.forEach((item, index) => {
             if (item.type === 'icon') drawIcon(item, rect, index);
@@ -565,35 +536,10 @@
         ctx.lineWidth = lineWidth || 2;
         ctx.beginPath();
         switch (tool) {
-            case 'pen':
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-                break;
-            case 'rect':
-                const rx = Math.min(x1,x2), ry = Math.min(y1,y2);
-                const rw = Math.abs(x2-x1), rh = Math.abs(y2-y1);
-                ctx.strokeRect(rx, ry, rw, rh);
-                break;
-            case 'circle':
-                const cx = (x1+x2)/2, cy = (y1+y2)/2;
-                const rad = Math.hypot(x2-x1, y2-y1)/2;
-                ctx.arc(cx, cy, rad, 0, Math.PI*2);
-                ctx.stroke();
-                break;
-            case 'arrow':
-                const angle = Math.atan2(y2-y1, x2-x1);
-                const headLen = 12;
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x2, y2);
-                ctx.lineTo(x2 - headLen*Math.cos(angle-0.4), y2 - headLen*Math.sin(angle-0.4));
-                ctx.moveTo(x2, y2);
-                ctx.lineTo(x2 - headLen*Math.cos(angle+0.4), y2 - headLen*Math.sin(angle+0.4));
-                ctx.stroke();
-                break;
+            case 'pen': ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); break;
+            case 'rect': const rx=Math.min(x1,x2), ry=Math.min(y1,y2), rw=Math.abs(x2-x1), rh=Math.abs(y2-y1); ctx.strokeRect(rx,ry,rw,rh); break;
+            case 'circle': const cx=(x1+x2)/2, cy=(y1+y2)/2, rad=Math.hypot(x2-x1,y2-y1)/2; ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.stroke(); break;
+            case 'arrow': const angle=Math.atan2(y2-y1,x2-x1), headLen=12; ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-headLen*Math.cos(angle-0.4), y2-headLen*Math.sin(angle-0.4)); ctx.moveTo(x2,y2); ctx.lineTo(x2-headLen*Math.cos(angle+0.4), y2-headLen*Math.sin(angle+0.4)); ctx.stroke(); break;
             default: break;
         }
         ctx.restore();
@@ -609,9 +555,7 @@
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(points[0][0], points[0][1]);
-        for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i][0], points[i][1]);
-        }
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
         ctx.stroke();
         ctx.restore();
     }
@@ -619,25 +563,19 @@
     function drawIcon(item, rect, index) {
         const { icon, x, y } = item;
         ctx.save();
-        // Рисуем иконку из файла
         const img = new Image();
         img.src = `${ICONS_PATH}${icon}.png`;
-        img.onload = () => {
-            ctx.drawImage(img, x-16, y-16, 32, 32);
-        };
+        img.onload = () => { ctx.drawImage(img, x-16, y-16, 32, 32); };
         img.onerror = () => {
-            // если картинка не загрузилась, рисуем текст
             ctx.font = '32px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             const symbols = { lt:'🚗', mt:'🚙', ht:'🚛', td:'🚜', spg:'💥' };
-            const symbol = symbols[icon] || '?';
             ctx.fillStyle = '#fff';
             ctx.shadowColor = 'black';
             ctx.shadowBlur = 8;
-            ctx.fillText(symbol, x, y);
+            ctx.fillText(symbols[icon] || '?', x, y);
         };
-        // Если выбрана иконка для перетаскивания, подсветим рамкой
         if (state.tool === 'select' && state.selectedIconIndex === index) {
             ctx.shadowBlur = 0;
             ctx.strokeStyle = '#00ff00';
@@ -648,10 +586,10 @@
     }
 
     function renderDrawings() {
-        if (state.map) loadMap(state.map, state.mode);
+        if (state.map) loadMap(state.map);
     }
 
-    // ====== ОБРАБОТЧИКИ СОБЫТИЙ ======
+    // ========== 13. ОБРАБОТЧИКИ МЫШИ (без изменений) ==========
     function getCanvasCoords(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -665,63 +603,23 @@
         };
     }
 
-    // Переменные для хранения последних координат
     let lastX = 0, lastY = 0;
 
-    function onMouseDown(e) {
-        e.preventDefault();
-        const { x, y } = getCanvasCoords(e);
-        lastX = x; lastY = y;
-        handlePointerDown(x, y);
-    }
+    function onMouseDown(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerDown(x,y); }
+    function onTouchStart(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerDown(x,y); }
+    function onMouseMove(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerMove(x,y); }
+    function onTouchMove(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerMove(x,y); }
+    function onMouseUp(e) { e.preventDefault(); handlePointerUp(); }
+    function onTouchEnd(e) { e.preventDefault(); handlePointerUp(); }
 
-    function onTouchStart(e) {
-        e.preventDefault();
-        const { x, y } = getCanvasCoords(e);
-        lastX = x; lastY = y;
-        handlePointerDown(x, y);
-    }
-
-    function onMouseMove(e) {
-        e.preventDefault();
-        const { x, y } = getCanvasCoords(e);
-        lastX = x; lastY = y;
-        handlePointerMove(x, y);
-    }
-
-    function onTouchMove(e) {
-        e.preventDefault();
-        const { x, y } = getCanvasCoords(e);
-        lastX = x; lastY = y;
-        handlePointerMove(x, y);
-    }
-
-    function onMouseUp(e) {
-        e.preventDefault();
-        handlePointerUp();
-    }
-
-    function onTouchEnd(e) {
-        e.preventDefault();
-        handlePointerUp();
-    }
-
-    // ====== ЛОГИКА НАЖАТИЯ ======
     function handlePointerDown(x, y) {
-        state.startX = x;
-        state.startY = y;
-
-        // Режим выделения
+        state.startX = x; state.startY = y;
         if (state.tool === 'select') {
             let foundIndex = -1;
-            for (let i = state.drawings.length-1; i >= 0; i--) {
+            for (let i=state.drawings.length-1; i>=0; i--) {
                 const item = state.drawings[i];
-                if (item.type === 'icon') {
-                    const dist = Math.hypot(x - item.x, y - item.y);
-                    if (dist < 25) {
-                        foundIndex = i;
-                        break;
-                    }
+                if (item.type === 'icon' && Math.hypot(x-item.x, y-item.y) < 25) {
+                    foundIndex = i; break;
                 }
             }
             if (foundIndex !== -1) {
@@ -738,8 +636,6 @@
                 return;
             }
         }
-
-        // Вставка иконки
         if (state.icon) {
             const item = { type: 'icon', icon: state.icon, x, y };
             state.drawings.push(item);
@@ -747,15 +643,10 @@
             renderDrawings();
             return;
         }
-
-        // Начало рисования
         state.isDrawing = true;
-        if (state.tool === 'freehand') {
-            state.freehandPoints = [[x, y]];
-        }
+        if (state.tool === 'freehand') state.freehandPoints = [[x, y]];
     }
 
-    // ====== ЛОГИКА ДВИЖЕНИЯ ======
     function handlePointerMove(x, y) {
         if (state.tool === 'select' && state.isDragging && state.selectedIconIndex !== -1) {
             const icon = state.drawings[state.selectedIconIndex];
@@ -763,39 +654,22 @@
                 icon.x = x - state.dragOffsetX;
                 icon.y = y - state.dragOffsetY;
                 renderDrawings();
-                sendToServer({
-                    type: 'update_icon',
-                    index: state.selectedIconIndex,
-                    newX: icon.x,
-                    newY: icon.y
-                });
+                sendToServer({ type: 'update_icon', index: state.selectedIconIndex, newX: icon.x, newY: icon.y });
             }
             return;
         }
-
         if (!state.isDrawing) return;
         if (state.tool === 'freehand') {
             state.freehandPoints.push([x, y]);
-            // Визуализируем текущий набросок
-            renderDrawings(); // это перерисует всё, но временно покажем
+            renderDrawings(); // временный просмотр
         }
-        // для остальных инструментов ничего не делаем
     }
 
-    // ====== ЛОГИКА ОТПУСКАНИЯ ======
     function handlePointerUp() {
-        if (state.tool === 'select') {
-            state.isDragging = false;
-            return;
-        }
-
+        if (state.tool === 'select') { state.isDragging = false; return; }
         if (state.isDrawing && state.tool === 'freehand') {
             if (state.freehandPoints.length > 1) {
-                const payload = {
-                    points: state.freehandPoints,
-                    color: state.color,
-                    lineWidth: state.lineWidth
-                };
+                const payload = { points: state.freehandPoints, color: state.color, lineWidth: state.lineWidth };
                 state.drawings.push({ type: 'freehand', ...payload });
                 sendToServer({ type: 'draw_freehand', payload });
                 renderDrawings();
@@ -804,44 +678,27 @@
             state.isDrawing = false;
             return;
         }
-
-        // Для остальных инструментов (pen, rect, circle, arrow)
         if (state.isDrawing && state.tool !== 'freehand') {
-            const x = lastX;
-            const y = lastY;
-            const startX = state.startX;
-            const startY = state.startY;
-            if (Math.hypot(x - startX, y - startY) < 3) {
-                state.isDrawing = false;
-                return;
+            const x = lastX, y = lastY;
+            const startX = state.startX, startY = state.startY;
+            if (Math.hypot(x-startX, y-startY) >= 3) {
+                const item = { type: 'shape', tool: state.tool, color: state.color, lineWidth: state.lineWidth, x1: startX, y1: startY, x2: x, y2: y };
+                state.drawings.push(item);
+                sendToServer({ type: 'draw', payload: item });
+                renderDrawings();
             }
-            const item = {
-                type: 'shape',
-                tool: state.tool,
-                color: state.color,
-                lineWidth: state.lineWidth,
-                x1: startX,
-                y1: startY,
-                x2: x,
-                y2: y
-            };
-            state.drawings.push(item);
-            sendToServer({ type: 'draw', payload: item });
-            renderDrawings();
         }
         state.isDrawing = false;
         state.freehandPoints = [];
     }
 
-    // ====== ДЕЙСТВИЯ ======
+    // ========== 14. ДЕЙСТВИЯ ==========
     function onApplyMap() {
-        const mode = modeSelect.value;
         const map = mapSelect.value;
         if (!map) return;
-        sendToServer({ type: 'load_map', map, mode });
+        sendToServer({ type: 'load_map', map });
         state.map = map;
-        state.mode = mode;
-        loadMap(map, mode);
+        loadMap(map);
     }
 
     function onClearDrawings() {
@@ -851,6 +708,7 @@
         renderDrawings();
     }
 
+    // ========== 15. ЗАПУСК ==========
     init();
 })();
 </script>
