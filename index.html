@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>WoT Tactics</title>
     <style>
-        /* (стили без изменений — те же, что в предыдущем ответе) */
+        /* (стили без изменений, как в предыдущем ответе) */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
         #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: #16213e; position: relative; }
@@ -208,6 +208,8 @@
                     <button class="tool-btn" data-tool="arrow">➡️</button>
                     <button class="tool-btn" data-tool="select">🖱️</button>
                     <button class="tool-btn" data-tool="eraser">🧹</button>
+                    <!-- Новая кнопка "Рука" -->
+                    <button class="tool-btn" data-tool="hand">🖐️</button>
                 </div>
                 <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; width:100%;">
                     <input type="color" class="color-picker" id="color-picker" value="#ff0000" style="flex-shrink:0;">
@@ -249,7 +251,7 @@
     const state = {
         roomName: null,
         map: null,
-        tool: 'freehand',
+        tool: 'freehand',       // текущий инструмент, может быть 'hand'
         color: '#ff0000',
         lineWidth: 3,
         icon: null,
@@ -275,7 +277,13 @@
         scale: 1,
         translateX: 0,
         translateY: 0,
-        // Для обработки двумя пальцами
+        // Для панорамирования мышью/пальцем (режим "Рука")
+        isPanning: false,
+        panStartX: 0,
+        panStartY: 0,
+        panStartTranslateX: 0,
+        panStartTranslateY: 0,
+        // Для зума двумя пальцами
         touchStartCenterX: 0,
         touchStartCenterY: 0,
         touchStartDist: 0,
@@ -418,7 +426,16 @@
                 state.tool = btn.dataset.tool;
                 state.icon = null;
                 document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
-                canvas.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
+                // Меняем курсор
+                if (state.tool === 'hand') {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
+                }
+                // Если переключились с руки на рисование, отменяем панорамирование
+                if (state.tool !== 'hand') {
+                    state.isPanning = false;
+                }
             });
         });
         colorPicker.addEventListener('input', (e) => state.color = e.target.value);
@@ -852,15 +869,52 @@
     // ========== ОБРАБОТЧИКИ МЫШИ ==========
     let lastX = 0, lastY = 0;
 
-    function onMouseDown(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerDown(x,y); }
-    function onMouseMove(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerMove(x,y); }
-    function onMouseUp(e) { e.preventDefault(); handlePointerUp(); }
+    function onMouseDown(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        lastX = x; lastY = y;
+        if (state.tool === 'hand') {
+            // Начинаем панорамирование
+            state.isPanning = true;
+            state.panStartX = x;
+            state.panStartY = y;
+            state.panStartTranslateX = state.translateX;
+            state.panStartTranslateY = state.translateY;
+            canvas.style.cursor = 'grabbing';
+            return;
+        }
+        handlePointerDown(x, y);
+    }
 
-    // ========== ОБРАБОТЧИКИ КАСАНИЙ (только два пальца для управления картой) ==========
+    function onMouseMove(e) {
+        e.preventDefault();
+        const { x, y } = getCanvasCoords(e);
+        lastX = x; lastY = y;
+        if (state.tool === 'hand' && state.isPanning) {
+            // Перемещаем карту
+            state.translateX = state.panStartTranslateX + (x - state.panStartX);
+            state.translateY = state.panStartTranslateY + (y - state.panStartY);
+            renderDrawings();
+            return;
+        }
+        handlePointerMove(x, y);
+    }
+
+    function onMouseUp(e) {
+        e.preventDefault();
+        if (state.tool === 'hand' && state.isPanning) {
+            state.isPanning = false;
+            canvas.style.cursor = 'grab';
+            return;
+        }
+        handlePointerUp();
+    }
+
+    // ========== ОБРАБОТЧИКИ КАСАНИЙ ==========
     function onTouchStart(e) {
         e.preventDefault();
         if (e.touches.length === 2) {
-            // Начинаем мультитач-режим (масштабирование и панорамирование)
+            // Зум двумя пальцами
             state.isMultiTouch = true;
             const touch1 = e.touches[0];
             const touch2 = e.touches[1];
@@ -871,7 +925,7 @@
             state.touchStartScale = state.scale;
             state.touchStartTranslateX = state.translateX;
             state.touchStartTranslateY = state.translateY;
-            // Отменяем любое рисование
+            // Отменяем рисование
             if (state.isDrawing) {
                 state.isDrawing = false;
                 state.freehandPoints = [];
@@ -879,10 +933,18 @@
             }
             return;
         }
-        if (e.touches.length === 1) {
-            // Один палец – всегда рисуем (если не в мультитач-режиме)
+        if (e.touches.length === 1 && !state.isMultiTouch) {
             const { x, y } = getCanvasCoords(e);
             lastX = x; lastY = y;
+            if (state.tool === 'hand') {
+                // Начинаем панорамирование одним пальцем
+                state.isPanning = true;
+                state.panStartX = x;
+                state.panStartY = y;
+                state.panStartTranslateX = state.translateX;
+                state.panStartTranslateY = state.translateY;
+                return;
+            }
             handlePointerDown(x, y);
         }
     }
@@ -890,61 +952,64 @@
     function onTouchMove(e) {
         e.preventDefault();
         if (e.touches.length === 2 && state.isMultiTouch) {
-            // Два пальца – масштабирование и панорамирование
             const touch1 = e.touches[0];
             const touch2 = e.touches[1];
             const rect = canvas.getBoundingClientRect();
             const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
             const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
             const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
-
-            // Панорамирование – сдвигаем карту на изменение центра
+            // Панорамирование двумя пальцами
             const deltaX = centerX - state.touchStartCenterX;
             const deltaY = centerY - state.touchStartCenterY;
             state.translateX = state.touchStartTranslateX + deltaX;
             state.translateY = state.touchStartTranslateY + deltaY;
-
             // Масштабирование
             let newScale = state.touchStartScale * (dist / state.touchStartDist);
             if (newScale < 1) {
                 newScale = 1;
-                // При достижении минимального масштаба сбрасываем трансляцию в 0
                 state.translateX = 0;
                 state.translateY = 0;
             }
             state.scale = newScale;
-
             renderDrawings();
             return;
         }
         if (e.touches.length === 1 && !state.isMultiTouch) {
-            // Один палец – рисуем
             const { x, y } = getCanvasCoords(e);
             lastX = x; lastY = y;
-            handlePointerMove(x, y);
+            if (state.tool === 'hand' && state.isPanning) {
+                // Перемещение одним пальцем
+                state.translateX = state.panStartTranslateX + (x - state.panStartX);
+                state.translateY = state.panStartTranslateY + (y - state.panStartY);
+                renderDrawings();
+                return;
+            }
+            if (state.tool !== 'hand') {
+                handlePointerMove(x, y);
+            }
         }
     }
 
     function onTouchEnd(e) {
         e.preventDefault();
         if (e.touches.length === 0) {
-            // Все пальцы убраны
             if (state.isMultiTouch) {
                 state.isMultiTouch = false;
-                // Проверяем, не вернулись ли к масштабу 1, и если да, центрируем
                 if (state.scale === 1) {
                     state.translateX = 0;
                     state.translateY = 0;
                     renderDrawings();
                 }
-            } else {
-                handlePointerUp();
             }
+            if (state.isPanning) {
+                state.isPanning = false;
+                return;
+            }
+            handlePointerUp();
         }
-        // Если остался один палец, ничего не делаем – он может продолжить рисование, но обычно после окончания мультитача не переходим в рисование.
     }
 
-    // ========== ЛОГИКА РИСОВАНИЯ (без изменений) ==========
+    // ========== ЛОГИКА РИСОВАНИЯ (без изменений, для всех инструментов, кроме 'hand') ==========
     function handlePointerDown(cx, cy) {
         const imgPos = canvasToImage(cx, cy);
         const rel = toImageRelative(imgPos.x, imgPos.y);
