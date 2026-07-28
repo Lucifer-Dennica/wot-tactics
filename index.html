@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>WoT Tactics</title>
+    <title>WoT Tactics Online</title>
     <style>
+        /* ... (стили без изменений, можете скопировать из предыдущей версии) ... */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
         #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: #16213e; position: relative; }
@@ -23,7 +24,6 @@
         .room-item .actions { display: flex; gap: 6px; }
         .room-item .actions button { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
         .room-item .join-btn { background: #1b9cfc; color: #fff; }
-        .room-item .delete-btn { background: #c0392b; color: #fff; }
         .error-msg { color: #f5a623; margin-top: 8px; }
         #game { display: none; flex-direction: column; height: 100%; width: 100%; background: #1a1a2e; }
         #top-bar { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 12px; background: #16213e; border-bottom: 2px solid #0f3460; align-items: center; flex-shrink: 0; }
@@ -51,6 +51,7 @@
 </head>
 <body>
 <div id="app">
+    <!-- Экран входа -->
     <div id="login">
         <h1>⚔️ WoT Tactics</h1>
         <div class="room-panel">
@@ -67,13 +68,15 @@
             <div id="status-msg" style="color:#888; text-align:center; margin-top:10px;"></div>
         </div>
     </div>
+
+    <!-- Игровой экран -->
     <div id="game">
         <div id="top-bar">
             <span style="font-weight:bold;">Комната: <span id="current-room-name">—</span></span>
-            <!-- Убираем выбор режима, оставляем только выбор карты -->
             <select id="map-select"><option value="">Выберите карту</option></select>
             <button id="apply-map-btn">Применить</button>
             <span class="room-info" id="player-count">👥 1</span>
+            <button id="delete-room-btn" style="background:#c0392b; display:none;">🗑️ Удалить комнату</button>
             <button id="leave-room-btn" style="background:#c0392b;">Выйти</button>
         </div>
         <div id="canvas-wrapper">
@@ -105,26 +108,24 @@
 (function() {
     'use strict';
 
-    // ========== 1. НАСТРОЙКИ ==========
-    const WS_URL = 'wss://wot-tactics-server.onrender.com'; // ваш WebSocket-сервер
+    // ========== НАСТРОЙКИ ==========
+    const WS_URL = 'wss://wot-tactics-server.onrender.com'; // ваш сервер
     const ICONS_PATH = 'icons/';
     const MAPS_PATH = 'maps/';
 
-    // ========== 2. СПИСОК КАРТ (добавляйте сюда свои) ==========
+    // ========== СПИСОК КАРТ ==========
     const MAPS = [
         { name: 'Прохоровка', file: 'prokhorovka' },
         { name: 'Рудники', file: 'mines' },
         { name: 'Химмельсдорф', file: 'himmelsdorf' },
         { name: 'Утёс', file: 'cliff' },
         { name: 'Эрленберг', file: 'erlenberg' },
-        // Добавьте новые карты сюда, например:
-        // { name: 'Новая карта', file: 'newmap' }
     ];
 
-    // ========== 3. СОСТОЯНИЕ ==========
+    // ========== СОСТОЯНИЕ ==========
     const state = {
         roomName: null,
-        map: null,                // выбранная карта (имя файла без расширения)
+        map: null,
         tool: 'freehand',
         color: '#ff0000',
         lineWidth: 3,
@@ -142,7 +143,7 @@
         isDragging: false,
     };
 
-    // ========== 4. DOM ==========
+    // ========== DOM ==========
     const loginScreen = document.getElementById('login');
     const gameScreen = document.getElementById('game');
     const roomListEl = document.getElementById('room-list');
@@ -157,6 +158,7 @@
     const mapSelect = document.getElementById('map-select');
     const applyMapBtn = document.getElementById('apply-map-btn');
     const leaveBtn = document.getElementById('leave-room-btn');
+    const deleteRoomBtn = document.getElementById('delete-room-btn');
     const playerCountSpan = document.getElementById('player-count');
     const canvas = document.getElementById('map-canvas');
     const ctx = canvas.getContext('2d');
@@ -167,7 +169,7 @@
     const iconGrid = document.getElementById('icon-grid');
     const clearBtn = document.getElementById('clear-btn');
 
-    // ========== 5. ЗАГРУЗКА ИКОНОК ==========
+    // ========== ИКОНКИ ==========
     const TANK_CLASSES = [
         { id: 'lt', label: 'Лёгкий' },
         { id: 'mt', label: 'Средний' },
@@ -200,7 +202,7 @@
         });
     }
 
-    // ========== 6. ЗАПОЛНЕНИЕ СПИСКА КАРТ ==========
+    // ========== СПИСОК КАРТ ==========
     function populateMapSelect() {
         mapSelect.innerHTML = '<option value="">Выберите карту</option>';
         MAPS.forEach(m => {
@@ -209,13 +211,10 @@
             opt.textContent = m.name;
             mapSelect.appendChild(opt);
         });
-        // По умолчанию выбираем первую карту (если есть)
-        if (MAPS.length > 0) {
-            mapSelect.value = MAPS[0].file;
-        }
+        if (MAPS.length > 0) mapSelect.value = MAPS[0].file;
     }
 
-    // ========== 7. ИНИЦИАЛИЗАЦИЯ ==========
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
     async function init() {
         state.myPlayerId = localStorage.getItem('wot_player_id');
         if (!state.myPlayerId) {
@@ -229,9 +228,9 @@
         createBtn.addEventListener('click', onCreateRoom);
         leaveBtn.addEventListener('click', onLeaveRoom);
         applyMapBtn.addEventListener('click', onApplyMap);
+        deleteRoomBtn.addEventListener('click', onDeleteRoom);
         searchInput.addEventListener('input', renderRoomList);
 
-        // Инструменты
         toolBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 toolBtns.forEach(b => b.classList.remove('active'));
@@ -246,7 +245,6 @@
         lineWidthInput.addEventListener('input', (e) => state.lineWidth = parseInt(e.target.value, 10));
         clearBtn.addEventListener('click', onClearDrawings);
 
-        // События мыши
         canvas.addEventListener('mousedown', onMouseDown);
         canvas.addEventListener('mousemove', onMouseMove);
         canvas.addEventListener('mouseup', onMouseUp);
@@ -260,7 +258,7 @@
         });
     }
 
-    // ========== 8. WEBSOCKET (без изменений) ==========
+    // ========== WEBSOCKET ==========
     function connectWebSocket() {
         if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
         state.ws = new WebSocket(WS_URL);
@@ -269,7 +267,7 @@
             state.ws.send(JSON.stringify({ type: 'get_rooms' }));
         };
         state.ws.onmessage = (e) => {
-            try { const data = JSON.parse(e.data); handleServerMessage(data); } catch(err) {}
+            try { const data = JSON.parse(e.data); handleServerMessage(data); } catch(err) { console.error(err); }
         };
         state.ws.onerror = () => { statusMsg.textContent = 'Ошибка соединения'; };
         state.ws.onclose = () => {
@@ -297,6 +295,7 @@
                 joinRoom(data.roomName);
                 break;
             case 'delete_success':
+                // Успешно удалили, сервер уже разослал room_closed, и мы выйдем
                 break;
             case 'join_success':
                 state.roomName = data.roomName;
@@ -336,7 +335,7 @@
                 loadMap(state.map);
                 break;
             case 'room_closed':
-                alert('Комната удалена');
+                alert('Комната была удалена создателем');
                 onLeaveRoom();
                 break;
             case 'error':
@@ -352,7 +351,7 @@
         }
     }
 
-    // ========== 9. КОМНАТЫ ==========
+    // ========== КОМНАТЫ ==========
     function onCreateRoom() {
         const name = newRoomName.value.trim();
         const password = newRoomPass.value.trim() || null;
@@ -365,17 +364,25 @@
         sendToServer({ type: 'join_room', roomName, playerId: state.myPlayerId });
     }
 
-    function deleteRoom(roomName) {
-        if (!confirm(`Удалить "${roomName}"?`)) return;
-        sendToServer({ type: 'delete_room', roomName, deleterId: state.myPlayerId });
+    function onDeleteRoom() {
+        if (!state.roomName) return;
+        if (!confirm(`Удалить комнату "${state.roomName}"? Все участники будут отключены.`)) return;
+        sendToServer({
+            type: 'delete_room',
+            roomName: state.roomName,
+            deleterId: state.myPlayerId
+        });
+        // Сервер разошлёт room_closed, и мы выйдем по получению
     }
 
     function onLeaveRoom() {
         state.roomName = null;
         state.drawings = [];
         state.players = new Set();
+        state.isCreator = false;
         gameScreen.style.display = 'none';
         loginScreen.style.display = 'flex';
+        deleteRoomBtn.style.display = 'none';
         sendToServer({ type: 'get_rooms' });
     }
 
@@ -409,16 +416,7 @@
                 joinRoom(room.name);
             });
             actions.appendChild(joinBtn);
-            if (room.creatorId === state.myPlayerId) {
-                const delBtn = document.createElement('button');
-                delBtn.className = 'delete-btn';
-                delBtn.textContent = '🗑️';
-                delBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteRoom(room.name);
-                });
-                actions.appendChild(delBtn);
-            }
+            // Удаление из списка УБРАНО — теперь только внутри комнаты
             const left = document.createElement('div');
             left.style.display = 'flex';
             left.style.alignItems = 'center';
@@ -431,50 +429,40 @@
         });
     }
 
-    // ========== 10. ИГРОВОЙ ЭКРАН ==========
+    // ========== ИГРОВОЙ ЭКРАН ==========
     function showGameScreen() {
         loginScreen.style.display = 'none';
         gameScreen.style.display = 'flex';
         currentRoomNameSpan.textContent = state.roomName;
-        // Выбираем карту в select (если есть)
         if (state.map) mapSelect.value = state.map;
         else if (MAPS.length > 0) mapSelect.value = MAPS[0].file;
         updatePlayerCount();
+        // Показываем кнопку удаления только создателю
+        deleteRoomBtn.style.display = state.isCreator ? 'inline-block' : 'none';
     }
 
     function updatePlayerCount() {
         playerCountSpan.textContent = '👥 ' + state.players.size;
     }
 
-    // ========== 11. ЗАГРУЗКА КАРТЫ (с автоопределением расширения) ==========
+    // ========== КАРТЫ ==========
     function loadMap(mapName) {
         if (!mapName) return;
         state.map = mapName;
-        // Пробуем загрузить с разными расширениями
         const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
         let currentIndex = 0;
         const img = new Image();
         img.crossOrigin = 'anonymous';
-
         function tryLoad() {
             if (currentIndex >= extensions.length) {
-                // Все расширения не подошли
                 drawFallbackScene(mapName);
                 return;
             }
             const url = `${MAPS_PATH}${mapName}${extensions[currentIndex]}`;
             img.src = url;
         }
-
-        img.onload = function() {
-            drawFullScene(img);
-        };
-
-        img.onerror = function() {
-            currentIndex++;
-            tryLoad();
-        };
-
+        img.onload = function() { drawFullScene(img); };
+        img.onerror = function() { currentIndex++; tryLoad(); };
         tryLoad();
     }
 
@@ -519,7 +507,7 @@
         drawAllDrawings(rect);
     }
 
-    // ========== 12. ОТРИСОВКА ВСЕХ ЭЛЕМЕНТОВ (без изменений) ==========
+    // ========== ОТРИСОВКА ==========
     function drawAllDrawings(rect) {
         state.drawings.forEach((item, index) => {
             if (item.type === 'icon') drawIcon(item, rect, index);
@@ -589,7 +577,7 @@
         if (state.map) loadMap(state.map);
     }
 
-    // ========== 13. ОБРАБОТЧИКИ МЫШИ (без изменений) ==========
+    // ========== ОБРАБОТЧИКИ МЫШИ ==========
     function getCanvasCoords(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -661,7 +649,7 @@
         if (!state.isDrawing) return;
         if (state.tool === 'freehand') {
             state.freehandPoints.push([x, y]);
-            renderDrawings(); // временный просмотр
+            renderDrawings();
         }
     }
 
@@ -692,7 +680,7 @@
         state.freehandPoints = [];
     }
 
-    // ========== 14. ДЕЙСТВИЯ ==========
+    // ========== ДЕЙСТВИЯ ==========
     function onApplyMap() {
         const map = mapSelect.value;
         if (!map) return;
@@ -708,7 +696,7 @@
         renderDrawings();
     }
 
-    // ========== 15. ЗАПУСК ==========
+    // ========== ЗАПУСК ==========
     init();
 })();
 </script>
