@@ -1,5 +1,5 @@
 {
-  "maps/standard": [
+  "standard": [
     { "name": "Прохоровка", "file": "prokhorovka" },
     { "name": "Рудники", "file": "mines" },
     { "name": "Химмельсдорф", "file": "himmelsdorf" },
