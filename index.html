@@ -275,14 +275,14 @@
         scale: 1,
         translateX: 0,
         translateY: 0,
-        isZooming: false,
-        lastTouchDist: 0,
-        // Панорамирование одним пальцем
-        isPanning: false,
-        panStartX: 0,
-        panStartY: 0,
-        panStartTranslateX: 0,
-        panStartTranslateY: 0,
+        // Для обработки двумя пальцами
+        touchStartCenterX: 0,
+        touchStartCenterY: 0,
+        touchStartDist: 0,
+        touchStartScale: 1,
+        touchStartTranslateX: 0,
+        touchStartTranslateY: 0,
+        isMultiTouch: false,
     };
 
     // ========== DOM ==========
@@ -856,70 +856,69 @@
     function onMouseMove(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerMove(x,y); }
     function onMouseUp(e) { e.preventDefault(); handlePointerUp(); }
 
-    // ========== ОБРАБОТЧИКИ КАСАНИЙ (с панорамированием) ==========
+    // ========== ОБРАБОТЧИКИ КАСАНИЙ (только два пальца для управления картой) ==========
     function onTouchStart(e) {
         e.preventDefault();
         if (e.touches.length === 2) {
-            // Начало зума двумя пальцами
-            state.isZooming = true;
-            state.lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-            // Если было панорамирование одним пальцем — отключаем
-            state.isPanning = false;
+            // Начинаем мультитач-режим (масштабирование и панорамирование)
+            state.isMultiTouch = true;
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const rect = canvas.getBoundingClientRect();
+            state.touchStartCenterX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+            state.touchStartCenterY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+            state.touchStartDist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+            state.touchStartScale = state.scale;
+            state.touchStartTranslateX = state.translateX;
+            state.touchStartTranslateY = state.translateY;
+            // Отменяем любое рисование
+            if (state.isDrawing) {
+                state.isDrawing = false;
+                state.freehandPoints = [];
+                state.tempDrawings = [];
+            }
             return;
         }
         if (e.touches.length === 1) {
+            // Один палец – всегда рисуем (если не в мультитач-режиме)
             const { x, y } = getCanvasCoords(e);
             lastX = x; lastY = y;
-            // Если масштаб > 1 и не рисуем — начинаем панорамирование
-            if (state.scale > 1 && !state.isDrawing) {
-                state.isPanning = true;
-                state.panStartX = x;
-                state.panStartY = y;
-                state.panStartTranslateX = state.translateX;
-                state.panStartTranslateY = state.translateY;
-                return;
-            }
-            // Иначе начинаем рисование
             handlePointerDown(x, y);
         }
     }
 
     function onTouchMove(e) {
         e.preventDefault();
-        if (e.touches.length === 2 && state.isZooming) {
-            // Обработка зума
-            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-            const delta = dist / state.lastTouchDist;
+        if (e.touches.length === 2 && state.isMultiTouch) {
+            // Два пальца – масштабирование и панорамирование
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
             const rect = canvas.getBoundingClientRect();
-            const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-            const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-            const oldScale = state.scale;
-            let newScale = oldScale * delta;
-            // Ограничиваем минимальный масштаб 1
+            const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+            const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+            const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+
+            // Панорамирование – сдвигаем карту на изменение центра
+            const deltaX = centerX - state.touchStartCenterX;
+            const deltaY = centerY - state.touchStartCenterY;
+            state.translateX = state.touchStartTranslateX + deltaX;
+            state.translateY = state.touchStartTranslateY + deltaY;
+
+            // Масштабирование
+            let newScale = state.touchStartScale * (dist / state.touchStartDist);
             if (newScale < 1) {
                 newScale = 1;
+                // При достижении минимального масштаба сбрасываем трансляцию в 0
                 state.translateX = 0;
                 state.translateY = 0;
-                state.isPanning = false;
-            } else {
-                // Корректируем трансляцию, чтобы точка под пальцами оставалась на месте
-                state.translateX = cx - (cx - state.translateX) * (newScale / oldScale);
-                state.translateY = cy - (cy - state.translateY) * (newScale / oldScale);
             }
             state.scale = newScale;
-            state.lastTouchDist = dist;
+
             renderDrawings();
             return;
         }
-        if (e.touches.length === 1 && state.isPanning) {
-            // Панорамирование одним пальцем
-            const { x, y } = getCanvasCoords(e);
-            state.translateX = state.panStartTranslateX + (x - state.panStartX);
-            state.translateY = state.panStartTranslateY + (y - state.panStartY);
-            renderDrawings();
-            return;
-        }
-        if (e.touches.length === 1 && !state.isPanning) {
+        if (e.touches.length === 1 && !state.isMultiTouch) {
+            // Один палец – рисуем
             const { x, y } = getCanvasCoords(e);
             lastX = x; lastY = y;
             handlePointerMove(x, y);
@@ -928,16 +927,24 @@
 
     function onTouchEnd(e) {
         e.preventDefault();
-        state.isZooming = false;
-        state.lastTouchDist = 0;
-        if (state.isPanning) {
-            state.isPanning = false;
-            return;
+        if (e.touches.length === 0) {
+            // Все пальцы убраны
+            if (state.isMultiTouch) {
+                state.isMultiTouch = false;
+                // Проверяем, не вернулись ли к масштабу 1, и если да, центрируем
+                if (state.scale === 1) {
+                    state.translateX = 0;
+                    state.translateY = 0;
+                    renderDrawings();
+                }
+            } else {
+                handlePointerUp();
+            }
         }
-        handlePointerUp();
+        // Если остался один палец, ничего не делаем – он может продолжить рисование, но обычно после окончания мультитача не переходим в рисование.
     }
 
-    // ========== ЛОГИКА РИСОВАНИЯ ==========
+    // ========== ЛОГИКА РИСОВАНИЯ (без изменений) ==========
     function handlePointerDown(cx, cy) {
         const imgPos = canvasToImage(cx, cy);
         const rel = toImageRelative(imgPos.x, imgPos.y);
