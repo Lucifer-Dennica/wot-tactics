@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>WoT Tactics</title>
     <style>
+        /* (стили без изменений — те же, что в предыдущем ответе) */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
         #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: #16213e; position: relative; }
@@ -123,7 +124,6 @@
         .action-buttons .clear-btn { background: #c0392b; }
         .action-buttons .clear-btn:hover { background: #a03222; }
 
-        /* Мобильная адаптация */
         @media (max-width: 700px) {
             #tools { width: 140px; padding: 6px; gap: 4px; }
             #tools .tool-btn { width: 28px; height: 28px; font-size: 0.9rem; }
@@ -148,7 +148,7 @@
                 overflow-y: auto;
             }
             #tools .tool-group { flex-wrap: wrap; }
-            #tools .tool-btn { width: 36px; height: 36px; font-size: 1.1rem; } /* увеличены */
+            #tools .tool-btn { width: 36px; height: 36px; font-size: 1.1rem; }
             #tools .color-picker { width: 36px; height: 36px; flex-shrink: 0; }
             #tools input[type="range"] { width: 90px; flex-shrink: 0; margin: 0 4px; }
             .tools-row { flex-wrap: wrap; }
@@ -156,7 +156,6 @@
             .tools-row .icon-btn { width: 36px; height: 36px; font-size: 1.1rem; }
             .action-buttons { flex: 0 1 auto; }
             .action-buttons button { font-size: 0.75rem; padding: 6px 12px; min-width: 60px; }
-
             #top-bar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; min-height: 44px; }
             #top-bar select, #top-bar button { font-size: 0.75rem; padding: 6px 10px; height: 32px; }
             .room-name-label { font-size: 0.85rem; }
@@ -201,7 +200,6 @@
         </div>
         <div id="canvas-wrapper">
             <div id="tools">
-                <!-- Инструменты -->
                 <div class="tool-group">
                     <button class="tool-btn active" data-tool="freehand">🖊️</button>
                     <button class="tool-btn" data-tool="pen">✏️</button>
@@ -211,15 +209,11 @@
                     <button class="tool-btn" data-tool="select">🖱️</button>
                     <button class="tool-btn" data-tool="eraser">🧹</button>
                 </div>
-
-                <!-- Цвет и толщина -->
                 <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; width:100%;">
                     <input type="color" class="color-picker" id="color-picker" value="#ff0000" style="flex-shrink:0;">
                     <input type="range" id="line-width" min="1" max="20" value="3" style="flex:1; min-width:60px; height:6px;">
                     <span style="font-size:0.7rem; color:#aaa; flex-shrink:0;" id="width-label">3</span>
                 </div>
-
-                <!-- Строка с иконками классов и кнопками действий -->
                 <div class="tools-row">
                     <div class="icon-grid" id="icon-grid"></div>
                     <div class="action-buttons">
@@ -234,7 +228,6 @@
         </div>
     </div>
 </div>
-
 <script>
 (function() {
     'use strict';
@@ -278,12 +271,18 @@
         imgWidth: 1000,
         imgHeight: 1000,
         tempDrawings: [],
-        // Масштабирование
+        // Масштабирование и панорамирование
         scale: 1,
         translateX: 0,
         translateY: 0,
         isZooming: false,
         lastTouchDist: 0,
+        // Панорамирование одним пальцем
+        isPanning: false,
+        panStartX: 0,
+        panStartY: 0,
+        panStartTranslateX: 0,
+        panStartTranslateY: 0,
     };
 
     // ========== DOM ==========
@@ -358,7 +357,7 @@
         if (MAPS.length > 0) mapSelect.value = MAPS[0].file;
     }
 
-    // ========== КООРДИНАТЫ (исправлено) ==========
+    // ========== КООРДИНАТЫ ==========
     function getCanvasCoords(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -370,9 +369,7 @@
         };
     }
 
-    // Преобразование координат клика (с учётом трансформаций) в координаты на картинке
     function canvasToImage(cx, cy) {
-        // Инвертируем трансформацию: вычитаем translate, делим на scale
         const tx = (cx - state.translateX) / state.scale;
         const ty = (cy - state.translateY) / state.scale;
         if (state.imgDrawW === 0 || state.imgDrawH === 0) return { x: 0, y: 0 };
@@ -381,7 +378,6 @@
         return { x: ix, y: iy };
     }
 
-    // Преобразование координат картинки в координаты на canvas (без учёта трансформации)
     function imageToCanvas(ix, iy) {
         if (state.imgWidth === 0 || state.imgHeight === 0) return { x: 0, y: 0 };
         let cx = (ix / state.imgWidth) * state.imgDrawW + state.imgOffsetX;
@@ -640,7 +636,7 @@
         else if (MAPS.length > 0) mapSelect.value = MAPS[0].file;
         updatePlayerCount();
         deleteRoomBtn.style.display = state.isCreator ? 'inline-block' : 'none';
-        // Сброс масштаба при входе
+        // Сброс масштаба и панорамирования при входе
         state.scale = 1;
         state.translateX = 0;
         state.translateY = 0;
@@ -698,17 +694,11 @@
         state.imgDrawW = drawW;
         state.imgDrawH = drawH;
 
-        // Применяем трансформации ко всей сцене
         ctx.save();
         ctx.translate(state.translateX, state.translateY);
         ctx.scale(state.scale, state.scale);
-
-        // Рисуем карту
         ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
-
-        // Рисуем все рисунки (они рисуются в том же пространстве, без дополнительных трансформаций)
         drawAllDrawings(rect);
-
         ctx.restore();
     }
 
@@ -731,7 +721,6 @@
         ctx.save();
         ctx.translate(state.translateX, state.translateY);
         ctx.scale(state.scale, state.scale);
-
         ctx.fillStyle = '#2a2a4a';
         ctx.fillRect(0, 0, rect.width, rect.height);
         ctx.strokeStyle = '#444';
@@ -744,12 +733,11 @@
         ctx.fillStyle = '#aaa';
         ctx.font = '20px sans-serif';
         ctx.fillText(`Карта: ${mapName} (не найдена)`, 20, 40);
-
         drawAllDrawings(rect);
         ctx.restore();
     }
 
-    // ========== ОТРИСОВКА РИСУНКОВ (без трансформаций, они уже применены) ==========
+    // ========== ОТРИСОВКА РИСУНКОВ ==========
     function drawAllDrawings(rect) {
         const allDrawings = state.drawings.concat(state.tempDrawings);
         allDrawings.forEach((item, index) => {
@@ -865,43 +853,91 @@
     let lastX = 0, lastY = 0;
 
     function onMouseDown(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerDown(x,y); }
-    function onTouchStart(e) { 
-        e.preventDefault(); 
+    function onMouseMove(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerMove(x,y); }
+    function onMouseUp(e) { e.preventDefault(); handlePointerUp(); }
+
+    // ========== ОБРАБОТЧИКИ КАСАНИЙ (с панорамированием) ==========
+    function onTouchStart(e) {
+        e.preventDefault();
         if (e.touches.length === 2) {
+            // Начало зума двумя пальцами
             state.isZooming = true;
             state.lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            // Если было панорамирование одним пальцем — отключаем
+            state.isPanning = false;
             return;
         }
-        const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerDown(x,y); 
+        if (e.touches.length === 1) {
+            const { x, y } = getCanvasCoords(e);
+            lastX = x; lastY = y;
+            // Если масштаб > 1 и не рисуем — начинаем панорамирование
+            if (state.scale > 1 && !state.isDrawing) {
+                state.isPanning = true;
+                state.panStartX = x;
+                state.panStartY = y;
+                state.panStartTranslateX = state.translateX;
+                state.panStartTranslateY = state.translateY;
+                return;
+            }
+            // Иначе начинаем рисование
+            handlePointerDown(x, y);
+        }
     }
-    function onMouseMove(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerMove(x,y); }
-    function onTouchMove(e) { 
-        e.preventDefault(); 
+
+    function onTouchMove(e) {
+        e.preventDefault();
         if (e.touches.length === 2 && state.isZooming) {
+            // Обработка зума
             const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             const delta = dist / state.lastTouchDist;
             const rect = canvas.getBoundingClientRect();
             const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
             const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
             const oldScale = state.scale;
-            let newScale = Math.min(5, Math.max(0.5, oldScale * delta));
-            state.translateX = cx - (cx - state.translateX) * (newScale / oldScale);
-            state.translateY = cy - (cy - state.translateY) * (newScale / oldScale);
+            let newScale = oldScale * delta;
+            // Ограничиваем минимальный масштаб 1
+            if (newScale < 1) {
+                newScale = 1;
+                state.translateX = 0;
+                state.translateY = 0;
+                state.isPanning = false;
+            } else {
+                // Корректируем трансляцию, чтобы точка под пальцами оставалась на месте
+                state.translateX = cx - (cx - state.translateX) * (newScale / oldScale);
+                state.translateY = cy - (cy - state.translateY) * (newScale / oldScale);
+            }
             state.scale = newScale;
             state.lastTouchDist = dist;
             renderDrawings();
             return;
         }
-        const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerMove(x,y); 
-    }
-    function onMouseUp(e) { e.preventDefault(); handlePointerUp(); }
-    function onTouchEnd(e) { 
-        e.preventDefault(); 
-        state.isZooming = false; 
-        state.lastTouchDist = 0;
-        handlePointerUp(); 
+        if (e.touches.length === 1 && state.isPanning) {
+            // Панорамирование одним пальцем
+            const { x, y } = getCanvasCoords(e);
+            state.translateX = state.panStartTranslateX + (x - state.panStartX);
+            state.translateY = state.panStartTranslateY + (y - state.panStartY);
+            renderDrawings();
+            return;
+        }
+        if (e.touches.length === 1 && !state.isPanning) {
+            const { x, y } = getCanvasCoords(e);
+            lastX = x; lastY = y;
+            handlePointerMove(x, y);
+        }
     }
 
+    function onTouchEnd(e) {
+        e.preventDefault();
+        state.isZooming = false;
+        state.lastTouchDist = 0;
+        if (state.isPanning) {
+            state.isPanning = false;
+            return;
+        }
+        handlePointerUp();
+    }
+
+    // ========== ЛОГИКА РИСОВАНИЯ ==========
     function handlePointerDown(cx, cy) {
         const imgPos = canvasToImage(cx, cy);
         const rel = toImageRelative(imgPos.x, imgPos.y);
