@@ -6,12 +6,12 @@
     { "name": "Утёс", "file": "cliff" },
     { "name": "Эрленберг", "file": "erlenberg" }
   ],
-  "встречный": [
+  "meeting": [
     { "name": "Прохоровка", "file": "prokhorovka" },
     { "name": "Рудники", "file": "mines" },
     { "name": "Химмельсдорф", "file": "himmelsdorf" }
   ],
-  "штурм": [
+  "assault": [
     { "name": "Утёс", "file": "cliff" },
     { "name": "Эрленберг", "file": "erlenberg" }
   ]
