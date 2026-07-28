@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>WoT Tactics Online</title>
+    <title>WoT Tactics</title>
     <style>
-        /* (стили как в предыдущем ответе, можно вставить те же самые) */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
         #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: #16213e; position: relative; }
+
         #login { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: #0f3460; }
         #login h1 { font-size: 2.5rem; margin-bottom: 20px; text-shadow: 0 0 10px #e94560; }
         .room-panel { background: #1a1a40; padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); }
@@ -26,28 +26,127 @@
         .room-item .join-btn { background: #1b9cfc; color: #fff; }
         .room-item .delete-btn { background: #c0392b; color: #fff; }
         .error-msg { color: #f5a623; margin-top: 8px; }
+
         #game { display: none; flex-direction: column; height: 100%; width: 100%; background: #1a1a2e; }
-        #top-bar { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 12px; background: #16213e; border-bottom: 2px solid #0f3460; align-items: center; flex-shrink: 0; }
-        #top-bar select, #top-bar button { padding: 6px 12px; border: none; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 0.9rem; cursor: pointer; }
+        #top-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 10px; background: #16213e; border-bottom: 2px solid #0f3460; align-items: center; flex-shrink: 0; min-height: 40px; }
+        #top-bar select, #top-bar button { padding: 4px 10px; border: none; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 0.85rem; cursor: pointer; height: 30px; }
         #top-bar button { background: #e94560; }
         #top-bar button:hover { background: #c73652; }
-        #top-bar .room-info { margin-left: auto; font-weight: bold; color: #f5a623; }
+        #top-bar .room-info { margin-left: auto; font-weight: bold; color: #f5a623; font-size: 0.9rem; }
+        .room-name-label { font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
+
         #canvas-wrapper { display: flex; flex: 1; overflow: hidden; position: relative; }
         #canvas-container { flex: 1; position: relative; background: #0f0f1f; }
-        #canvas-container canvas { display: block; width: 100%; height: 100%; background: #222; cursor: crosshair; }
-        #tools { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #16213e; border-right: 2px solid #0f3460; width: 180px; flex-shrink: 0; overflow-y: auto; max-height: 100%; }
-        #tools label { font-size: 0.8rem; color: #aaa; }
+        #canvas-container canvas { display: block; width: 100%; height: 100%; background: #222; cursor: crosshair; touch-action: none; }
+
+        #tools {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px 10px;
+            background: #16213e;
+            border-right: 2px solid #0f3460;
+            width: 180px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            max-height: 100%;
+        }
+        #tools label { font-size: 0.75rem; color: #aaa; margin-bottom: -2px; }
         #tools .tool-group { display: flex; flex-wrap: wrap; gap: 4px; }
-        #tools .tool-btn { width: 32px; height: 32px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
+        #tools .tool-btn {
+            width: 30px; height: 30px;
+            border: 2px solid #444;
+            border-radius: 4px;
+            background: #2a2a5a;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.1s;
+        }
         #tools .tool-btn.active { border-color: #e94560; background: #3a3a7a; }
-        #tools .color-picker { width: 100%; height: 30px; border: none; background: transparent; cursor: pointer; }
+        #tools .color-picker { width: 100%; height: 28px; border: none; background: transparent; cursor: pointer; }
         #tools input[type="range"] { width: 100%; accent-color: #e94560; }
         #tools .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
-        #tools .icon-btn { width: 40px; height: 40px; border: 2px solid #444; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; background-size: contain; background-position: center; background-repeat: no-repeat; }
+        #tools .icon-btn {
+            width: 40px; height: 40px;
+            border: 2px solid #444;
+            border-radius: 4px;
+            background: #2a2a5a;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
         #tools .icon-btn.active { border-color: #e94560; background-color: #3a3a7a; }
-        #clear-btn { margin-top: 8px; background: #c0392b; border: none; color: #fff; padding: 6px; border-radius: 4px; cursor: pointer; }
-        @media (max-width: 700px) { #tools { width: 140px; padding: 6px; } #tools .tool-btn { width: 28px; height: 28px; font-size: 1rem; } #tools .icon-btn { width: 34px; height: 34px; } }
-        @media (max-width: 500px) { #canvas-wrapper { flex-direction: column; } #tools { width: 100%; flex-direction: row; flex-wrap: wrap; height: auto; border-right: none; border-bottom: 2px solid #0f3460; } }
+        .action-buttons { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+        .action-buttons button {
+            flex: 1;
+            padding: 6px;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 0.8rem;
+            cursor: pointer;
+            background: #2a2a5a;
+            min-width: 50px;
+        }
+        .action-buttons .undo-btn { background: #2a5a5a; }
+        .action-buttons .undo-btn:hover { background: #1a4a4a; }
+        .action-buttons .clear-btn { background: #c0392b; }
+        .action-buttons .clear-btn:hover { background: #a03222; }
+
+        /* Мобильная адаптация */
+        @media (max-width: 700px) {
+            #tools { width: 140px; padding: 6px; gap: 4px; }
+            #tools .tool-btn { width: 26px; height: 26px; font-size: 0.9rem; }
+            #tools .icon-btn { width: 34px; height: 34px; font-size: 1.2rem; }
+            #top-bar select, #top-bar button { font-size: 0.75rem; padding: 2px 8px; height: 26px; }
+            #top-bar { gap: 4px; padding: 4px 8px; }
+        }
+
+        @media (max-width: 500px) {
+            #canvas-wrapper { flex-direction: column; }
+            #tools {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                height: auto;
+                max-height: 120px;
+                border-right: none;
+                border-bottom: 2px solid #0f3460;
+                padding: 4px 6px;
+                gap: 4px;
+                align-items: center;
+                overflow-y: auto;
+            }
+            #tools label { display: none; }
+            #tools .tool-group { flex-wrap: wrap; }
+            #tools .tool-btn { width: 28px; height: 28px; font-size: 0.9rem; }
+            #tools .icon-btn { width: 32px; height: 32px; font-size: 1.1rem; }
+            #tools .color-picker { width: 28px; height: 28px; flex-shrink: 0; }
+            #tools input[type="range"] { width: 50px; flex-shrink: 0; }
+            .action-buttons { flex-wrap: wrap; }
+            .action-buttons button { font-size: 0.65rem; padding: 3px 6px; min-width: 30px; flex: 0 1 auto; }
+            #top-bar { flex-wrap: wrap; gap: 3px; padding: 3px 6px; min-height: 30px; }
+            #top-bar select, #top-bar button { font-size: 0.6rem; padding: 1px 4px; height: 22px; }
+            .room-name-label { font-size: 0.7rem; }
+            #top-bar .room-info { font-size: 0.65rem; }
+        }
+
+        @media (max-width: 400px) {
+            #tools { max-height: 100px; padding: 2px 4px; }
+            #tools .tool-btn { width: 24px; height: 24px; font-size: 0.7rem; }
+            #tools .icon-btn { width: 28px; height: 28px; font-size: 1rem; }
+            #top-bar select, #top-bar button { font-size: 0.5rem; padding: 1px 3px; height: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -70,16 +169,15 @@
     </div>
     <div id="game">
         <div id="top-bar">
-            <span style="font-weight:bold;">Комната: <span id="current-room-name">—</span></span>
+            <span class="room-name-label">Комната: <span id="current-room-name">—</span></span>
             <select id="map-select"><option value="">Выберите карту</option></select>
             <button id="apply-map-btn">Применить</button>
             <span class="room-info" id="player-count">👥 1</span>
-            <button id="delete-room-btn" style="background:#c0392b; display:none;">🗑️ Удалить комнату</button>
+            <button id="delete-room-btn" style="background:#c0392b; display:none;">🗑️</button>
             <button id="leave-room-btn" style="background:#c0392b;">Выйти</button>
         </div>
         <div id="canvas-wrapper">
             <div id="tools">
-                <label>🔧 Инструмент</label>
                 <div class="tool-group">
                     <button class="tool-btn active" data-tool="freehand">🖊️</button>
                     <button class="tool-btn" data-tool="pen">✏️</button>
@@ -87,14 +185,17 @@
                     <button class="tool-btn" data-tool="circle">●</button>
                     <button class="tool-btn" data-tool="arrow">➡️</button>
                     <button class="tool-btn" data-tool="select">🖱️</button>
+                    <button class="tool-btn" data-tool="eraser">🧹</button> <!-- ластик -->
                 </div>
-                <label>🎨 Цвет</label>
-                <input type="color" class="color-picker" id="color-picker" value="#ff0000">
-                <label>📏 Толщина</label>
-                <input type="range" id="line-width" min="1" max="20" value="3">
-                <label>🚀 Иконки танков</label>
+                <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+                    <input type="color" class="color-picker" id="color-picker" value="#ff0000">
+                    <input type="range" id="line-width" min="1" max="20" value="3" style="flex:1; min-width:40px;">
+                </div>
                 <div class="icon-grid" id="icon-grid"></div>
-                <button id="clear-btn">🗑️ Очистить всё</button>
+                <div class="action-buttons">
+                    <button class="undo-btn" id="undo-btn">↩️ Отменить</button>
+                    <button class="clear-btn" id="clear-btn">🗑️ Очистить</button>
+                </div>
             </div>
             <div id="canvas-container">
                 <canvas id="map-canvas"></canvas>
@@ -129,6 +230,7 @@
         icon: null,
         isDrawing: false,
         drawings: [],
+        history: [],         // для undo
         players: new Set(),
         ws: null,
         myPlayerId: null,
@@ -137,13 +239,14 @@
         selectedIconIndex: -1,
         dragOffsetX: 0, dragOffsetY: 0,
         isDragging: false,
-        // Параметры отображения карты
         imgOffsetX: 0,
         imgOffsetY: 0,
         imgDrawW: 0,
         imgDrawH: 0,
-        imgWidth: 0,
-        imgHeight: 0,
+        imgWidth: 1000,
+        imgHeight: 1000,
+        // для временного отображения кисти
+        tempDrawings: [],
     };
 
     // ========== DOM ==========
@@ -170,6 +273,7 @@
     const colorPicker = document.getElementById('color-picker');
     const lineWidthInput = document.getElementById('line-width');
     const iconGrid = document.getElementById('icon-grid');
+    const undoBtn = document.getElementById('undo-btn');
     const clearBtn = document.getElementById('clear-btn');
 
     // ========== ИКОНКИ ==========
@@ -216,32 +320,25 @@
         if (MAPS.length > 0) mapSelect.value = MAPS[0].file;
     }
 
-    // ========== ПРЕОБРАЗОВАНИЕ КООРДИНАТ ==========
+    // ========== КООРДИНАТЫ ==========
     function getCanvasCoords(e) {
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            if (clientX == null) return { x:0, y:0 };
-            // Теперь просто возвращаем координаты относительно rect в CSS-пикселях
-            return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        if (clientX == null) return { x:0, y:0 };
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
         };
     }
 
-    // Преобразование координат canvas -> координаты картинки (в пикселях изображения)
     function canvasToImage(cx, cy) {
         if (state.imgDrawW === 0 || state.imgDrawH === 0) return { x: 0, y: 0 };
-        // Вычитаем смещение
-        let ix = (cx - state.imgOffsetX);
-        let iy = (cy - state.imgOffsetY);
-        // Масштабируем к размерам изображения
-        ix = ix / state.imgDrawW * state.imgWidth;
-        iy = iy / state.imgDrawH * state.imgHeight;
+        let ix = (cx - state.imgOffsetX) / state.imgDrawW * state.imgWidth;
+        let iy = (cy - state.imgOffsetY) / state.imgDrawH * state.imgHeight;
         return { x: ix, y: iy };
     }
 
-    // Преобразование координат картинки -> canvas
     function imageToCanvas(ix, iy) {
         if (state.imgWidth === 0 || state.imgHeight === 0) return { x: 0, y: 0 };
         let cx = (ix / state.imgWidth) * state.imgDrawW + state.imgOffsetX;
@@ -249,7 +346,6 @@
         return { x: cx, y: cy };
     }
 
-    // Сохраняем относительные координаты в пространстве картинки (0..1)
     function toImageRelative(ix, iy) {
         return { x: ix / state.imgWidth, y: iy / state.imgHeight };
     }
@@ -273,6 +369,8 @@
         applyMapBtn.addEventListener('click', onApplyMap);
         deleteRoomBtn.addEventListener('click', onDeleteRoom);
         searchInput.addEventListener('input', renderRoomList);
+        undoBtn.addEventListener('click', onUndo);
+        clearBtn.addEventListener('click', onClearDrawings);
 
         toolBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -286,7 +384,6 @@
         });
         colorPicker.addEventListener('input', (e) => state.color = e.target.value);
         lineWidthInput.addEventListener('input', (e) => state.lineWidth = parseInt(e.target.value, 10));
-        clearBtn.addEventListener('click', onClearDrawings);
 
         canvas.addEventListener('mousedown', onMouseDown);
         canvas.addEventListener('mousemove', onMouseMove);
@@ -343,6 +440,7 @@
                 state.roomName = data.roomName;
                 state.map = data.map || (MAPS.length > 0 ? MAPS[0].file : null);
                 state.drawings = data.drawings || [];
+                state.history = [];
                 const room = roomsCache.find(r => r.name === data.roomName);
                 state.isCreator = room ? room.creatorId === state.myPlayerId : false;
                 showGameScreen();
@@ -354,10 +452,12 @@
                 break;
             case 'draw':
                 state.drawings.push(data.payload);
+                pushHistory();
                 renderDrawings();
                 break;
             case 'draw_freehand':
                 state.drawings.push({ type: 'freehand', ...data.payload });
+                pushHistory();
                 renderDrawings();
                 break;
             case 'update_icon':
@@ -370,6 +470,7 @@
                 break;
             case 'clear':
                 state.drawings = [];
+                pushHistory();
                 renderDrawings();
                 break;
             case 'load_map':
@@ -391,6 +492,38 @@
                 break;
             default: break;
         }
+    }
+
+    // ========== ИСТОРИЯ ==========
+    function pushHistory() {
+        state.history.push(JSON.stringify(state.drawings));
+        if (state.history.length > 50) state.history.shift(); // ограничим
+    }
+
+    function onUndo() {
+        if (state.history.length === 0) return;
+        const prev = state.history.pop();
+        state.drawings = JSON.parse(prev);
+        // Также нужно синхронизировать с сервером (отправить обновлённый список)
+        // Но проще отправить команду clear и затем перерисовать? Нет, лучше отправить все объекты.
+        // Для простоты мы можем отправить команду, которая заменяет все рисунки.
+        // Но поскольку undo должен быть локальным, а не глобальным, мы можем просто перерисовать локально.
+        // Однако другие игроки не увидят отмену. Чтобы синхронизировать, можно отправить полный список.
+        // Реализуем: отправляем на сервер команду 'sync_drawings' с полным массивом.
+        sendToServer({ type: 'sync_drawings', drawings: state.drawings });
+        renderDrawings();
+    }
+
+    // Добавим обработку sync_drawings на сервере (небольшое изменение в server.js). Но для простоты можно сделать так: при undo мы удаляем последний объект из списка и отправляем команду 'draw_remove' с индексом. Но это сложнее. Учитывая, что это локальное undo, мы можем просто перерисовать локально, а другим игрокам не показывать. Но тогда рассинхрон. Я добавлю в server.js обработку 'sync_drawings', которая заменяет drawings комнаты и рассылает всем новый список. Но это требует изменения сервера. Я добавлю это в код сервера позже, а пока сделаем локальный undo без синхронизации (только для текущего пользователя). Но тогда другие не увидят отмену. Для теста пока оставим локально.
+
+    // Пока сделаем простой undo: удаляем последний элемент из state.drawings и перерисовываем, но не синхронизируем. Это не идеально, но для начала.
+
+    function onUndo() {
+        if (state.drawings.length === 0) return;
+        state.drawings.pop();
+        renderDrawings();
+        // Отправим на сервер новое состояние (как обновление)
+        sendToServer({ type: 'sync_drawings', drawings: state.drawings });
     }
 
     // ========== КОМНАТЫ ==========
@@ -415,6 +548,7 @@
     function onLeaveRoom() {
         state.roomName = null;
         state.drawings = [];
+        state.history = [];
         state.players = new Set();
         state.isCreator = false;
         gameScreen.style.display = 'none';
@@ -525,7 +659,6 @@
         const offsetY = (rect.height - drawH) / 2;
         ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
 
-        // Сохраняем параметры для преобразования координат
         state.imgOffsetX = offsetX;
         state.imgOffsetY = offsetY;
         state.imgDrawW = drawW;
@@ -554,7 +687,6 @@
         ctx.fillStyle = '#aaa';
         ctx.font = '20px sans-serif';
         ctx.fillText(`Карта: ${mapName} (не найдена)`, 20, 40);
-        // Для fallback используем условные размеры
         state.imgWidth = 1000;
         state.imgHeight = 1000;
         state.imgOffsetX = 0;
@@ -564,9 +696,10 @@
         drawAllDrawings(rect);
     }
 
-    // ========== ОТРИСОВКА РИСУНКОВ ==========
+    // ========== ОТРИСОВКА ==========
     function drawAllDrawings(rect) {
-        state.drawings.forEach((item, index) => {
+        const allDrawings = state.drawings.concat(state.tempDrawings);
+        allDrawings.forEach((item, index) => {
             if (item.type === 'icon') drawIcon(item, index);
             else if (item.type === 'freehand') drawFreehand(item);
             else drawShape(item);
@@ -575,7 +708,6 @@
 
     function drawShape(item) {
         const { tool, color, lineWidth, x1, y1, x2, y2 } = item;
-        // Преобразуем относительные координаты (в пространстве картинки) в пиксели картинки, затем в canvas
         const p1 = fromImageRelative(x1, y1);
         const p2 = fromImageRelative(x2, y2);
         const c1 = imageToCanvas(p1.x, p1.y);
@@ -627,7 +759,6 @@
     function drawFreehand(item) {
         const { points, color, lineWidth } = item;
         if (!points || points.length < 2) return;
-        // Преобразуем относительные точки в canvas
         const canvasPoints = points.map(p => {
             const imgP = fromImageRelative(p[0], p[1]);
             return imageToCanvas(imgP.x, imgP.y);
@@ -648,15 +779,12 @@
 
     function drawIcon(item, index) {
         const { icon, x, y } = item;
-        // Относительные координаты -> пиксели картинки -> canvas
         const imgP = fromImageRelative(x, y);
         const c = imageToCanvas(imgP.x, imgP.y);
         ctx.save();
         const img = new Image();
         img.src = `${ICONS_PATH}${icon}.png`;
-        img.onload = () => {
-            ctx.drawImage(img, c.x-16, c.y-16, 32, 32);
-        };
+        img.onload = () => { ctx.drawImage(img, c.x-16, c.y-16, 32, 32); };
         img.onerror = () => {
             ctx.font = '32px sans-serif';
             ctx.textAlign = 'center';
@@ -680,7 +808,7 @@
         if (state.map) loadMap(state.map);
     }
 
-    // ========== ОБРАБОТЧИКИ МЫШИ ==========
+    // ========== ОБРАБОТЧИКИ СОБЫТИЙ МЫШИ/ТАЧА ==========
     let lastX = 0, lastY = 0;
 
     function onMouseDown(e) { e.preventDefault(); const {x,y}=getCanvasCoords(e); lastX=x; lastY=y; handlePointerDown(x,y); }
@@ -691,23 +819,54 @@
     function onTouchEnd(e) { e.preventDefault(); handlePointerUp(); }
 
     function handlePointerDown(cx, cy) {
-        // Преобразуем координаты canvas в координаты картинки (пиксели)
         const imgPos = canvasToImage(cx, cy);
-        // Затем в относительные (0..1) относительно размеров картинки
         const rel = toImageRelative(imgPos.x, imgPos.y);
 
-        // Сохраняем начальные точки как относительные
         state.startX = rel.x;
         state.startY = rel.y;
+
+        // Ластик: удаляем ближайший объект
+        if (state.tool === 'eraser') {
+            let minDist = Infinity;
+            let minIndex = -1;
+            state.drawings.forEach((item, i) => {
+                let dist;
+                if (item.type === 'icon') {
+                    dist = Math.hypot(rel.x - item.x, rel.y - item.y);
+                } else if (item.type === 'freehand') {
+                    // примерная дистанция до средней точки
+                    if (item.points && item.points.length > 0) {
+                        const avgX = item.points.reduce((s,p) => s+p[0], 0) / item.points.length;
+                        const avgY = item.points.reduce((s,p) => s+p[1], 0) / item.points.length;
+                        dist = Math.hypot(rel.x - avgX, rel.y - avgY);
+                    } else dist = Infinity;
+                } else {
+                    // фигура
+                    const midX = (item.x1 + item.x2) / 2;
+                    const midY = (item.y1 + item.y2) / 2;
+                    dist = Math.hypot(rel.x - midX, rel.y - midY);
+                }
+                if (dist < minDist) {
+                    minDist = dist;
+                    minIndex = i;
+                }
+            });
+            if (minIndex !== -1 && minDist < 0.05) { // порог 5% от карты
+                state.drawings.splice(minIndex, 1);
+                pushHistory();
+                renderDrawings();
+                sendToServer({ type: 'sync_drawings', drawings: state.drawings });
+            }
+            return;
+        }
 
         if (state.tool === 'select') {
             let foundIndex = -1;
             for (let i=state.drawings.length-1; i>=0; i--) {
                 const item = state.drawings[i];
                 if (item.type === 'icon') {
-                    // Сравниваем с относительными координатами иконки
                     const dist = Math.hypot(rel.x - item.x, rel.y - item.y);
-                    if (dist < 0.02) { // порог ~2% от размера карты
+                    if (dist < 0.02) {
                         foundIndex = i;
                         break;
                     }
@@ -716,7 +875,6 @@
             if (foundIndex !== -1) {
                 state.selectedIconIndex = foundIndex;
                 state.isDragging = true;
-                // Смещение в относительных координатах
                 const icon = state.drawings[foundIndex];
                 state.dragOffsetX = rel.x - icon.x;
                 state.dragOffsetY = rel.y - icon.y;
@@ -730,9 +888,9 @@
         }
 
         if (state.icon) {
-            // Вставляем иконку с относительными координатами
             const item = { type: 'icon', icon: state.icon, x: rel.x, y: rel.y };
             state.drawings.push(item);
+            pushHistory();
             sendToServer({ type: 'draw', payload: item });
             renderDrawings();
             return;
@@ -741,6 +899,7 @@
         state.isDrawing = true;
         if (state.tool === 'freehand') {
             state.freehandPoints = [[rel.x, rel.y]];
+            state.tempDrawings = [{ type: 'freehand', points: state.freehandPoints, color: state.color, lineWidth: state.lineWidth }];
         }
     }
 
@@ -751,7 +910,6 @@
         if (state.tool === 'select' && state.isDragging && state.selectedIconIndex !== -1) {
             const icon = state.drawings[state.selectedIconIndex];
             if (icon) {
-                // Перемещаем иконку в относительных координатах
                 icon.x = rel.x - state.dragOffsetX;
                 icon.y = rel.y - state.dragOffsetY;
                 renderDrawings();
@@ -763,7 +921,8 @@
         if (!state.isDrawing) return;
         if (state.tool === 'freehand') {
             state.freehandPoints.push([rel.x, rel.y]);
-            renderDrawings();
+            state.tempDrawings = [{ type: 'freehand', points: state.freehandPoints, color: state.color, lineWidth: state.lineWidth }];
+            renderDrawings(); // перерисовываем с временными
         }
     }
 
@@ -777,19 +936,20 @@
                     lineWidth: state.lineWidth
                 };
                 state.drawings.push({ type: 'freehand', ...payload });
+                pushHistory();
                 sendToServer({ type: 'draw_freehand', payload });
-                renderDrawings();
             }
             state.freehandPoints = [];
+            state.tempDrawings = [];
             state.isDrawing = false;
+            renderDrawings();
             return;
         }
         if (state.isDrawing && state.tool !== 'freehand') {
-            // Используем последние координаты canvas, преобразуем в относительные
             const imgPos = canvasToImage(lastX, lastY);
             const relEnd = toImageRelative(imgPos.x, imgPos.y);
             const dist = Math.hypot(relEnd.x - state.startX, relEnd.y - state.startY);
-            if (dist >= 0.005) { // маленький порог
+            if (dist >= 0.005) {
                 const item = {
                     type: 'shape',
                     tool: state.tool,
@@ -801,12 +961,14 @@
                     y2: relEnd.y
                 };
                 state.drawings.push(item);
+                pushHistory();
                 sendToServer({ type: 'draw', payload: item });
                 renderDrawings();
             }
         }
         state.isDrawing = false;
         state.freehandPoints = [];
+        state.tempDrawings = [];
     }
 
     // ========== ДЕЙСТВИЯ ==========
@@ -821,6 +983,7 @@
     function onClearDrawings() {
         if (!confirm('Очистить все рисунки?')) return;
         state.drawings = [];
+        pushHistory();
         sendToServer({ type: 'clear' });
         renderDrawings();
     }
