@@ -28,8 +28,8 @@
         .error-msg { color: #f5a623; margin-top: 8px; }
 
         #game { display: none; flex-direction: column; height: 100%; width: 100%; background: #1a1a2e; }
-        #top-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 10px; background: #16213e; border-bottom: 2px solid #0f3460; align-items: center; flex-shrink: 0; min-height: 40px; }
-        #top-bar select, #top-bar button { padding: 4px 10px; border: none; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 0.85rem; cursor: pointer; height: 30px; }
+        #top-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 12px; background: #16213e; border-bottom: 2px solid #0f3460; align-items: center; flex-shrink: 0; min-height: 48px; }
+        #top-bar select, #top-bar button { padding: 6px 12px; border: none; border-radius: 4px; background: #2a2a5a; color: #fff; font-size: 0.9rem; cursor: pointer; height: 34px; }
         #top-bar button { background: #e94560; }
         #top-bar button:hover { background: #c73652; }
         #top-bar .room-info { margin-left: auto; font-weight: bold; color: #f5a623; font-size: 0.9rem; }
@@ -68,14 +68,26 @@
         #tools .tool-btn.active { border-color: #e94560; background: #3a3a7a; }
         #tools .color-picker { width: 100%; height: 28px; border: none; background: transparent; cursor: pointer; }
         #tools input[type="range"] { width: 100%; accent-color: #e94560; }
-        #tools .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
-        #tools .icon-btn {
-            width: 40px; height: 40px;
+        .tools-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+        }
+        .tools-row .icon-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            flex: 1;
+        }
+        .tools-row .icon-btn {
+            width: 36px; height: 36px;
             border: 2px solid #444;
             border-radius: 4px;
             background: #2a2a5a;
             color: #fff;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -84,18 +96,24 @@
             background-position: center;
             background-repeat: no-repeat;
         }
-        #tools .icon-btn.active { border-color: #e94560; background-color: #3a3a7a; }
-        .action-buttons { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
-        .action-buttons button {
+        .tools-row .icon-btn.active { border-color: #e94560; background-color: #3a3a7a; }
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
             flex: 1;
-            padding: 6px;
+            justify-content: flex-end;
+        }
+        .action-buttons button {
+            padding: 6px 10px;
             border: none;
             border-radius: 4px;
             color: #fff;
             font-size: 0.8rem;
             cursor: pointer;
             background: #2a2a5a;
-            min-width: 50px;
+            min-width: 60px;
+            flex: 1;
         }
         .action-buttons .undo-btn { background: #2a5a5a; }
         .action-buttons .undo-btn:hover { background: #1a4a4a; }
@@ -106,9 +124,9 @@
         @media (max-width: 700px) {
             #tools { width: 140px; padding: 6px; gap: 4px; }
             #tools .tool-btn { width: 26px; height: 26px; font-size: 0.9rem; }
-            #tools .icon-btn { width: 34px; height: 34px; font-size: 1.2rem; }
-            #top-bar select, #top-bar button { font-size: 0.75rem; padding: 2px 8px; height: 26px; }
-            #top-bar { gap: 4px; padding: 4px 8px; }
+            .tools-row .icon-btn { width: 30px; height: 30px; font-size: 1.1rem; }
+            #top-bar select, #top-bar button { font-size: 0.75rem; padding: 4px 8px; height: 28px; }
+            #top-bar { gap: 4px; padding: 6px 8px; min-height: 40px; }
         }
 
         @media (max-width: 500px) {
@@ -118,36 +136,36 @@
                 flex-direction: row;
                 flex-wrap: wrap;
                 height: auto;
-                max-height: 140px;
+                max-height: 160px;
                 border-right: none;
                 border-bottom: 2px solid #0f3460;
-                padding: 4px 6px;
+                padding: 6px 8px;
                 gap: 4px;
                 align-items: center;
                 overflow-y: auto;
             }
             #tools .tool-group { flex-wrap: wrap; }
-            #tools .tool-btn { width: 30px; height: 30px; font-size: 0.9rem; }
-            #tools .icon-btn { width: 34px; height: 34px; font-size: 1.2rem; } /* возвращаем компактный размер */
-            #tools .color-picker { width: 28px; height: 28px; flex-shrink: 0; }
-            #tools input[type="range"] { 
-                width: 80px;
-                flex-shrink: 0;
-                margin: 0 4px;
-            }
-            .action-buttons button { font-size: 0.65rem; padding: 4px 6px; min-width: 30px; flex: 0 1 auto; }
-            #top-bar { flex-wrap: wrap; gap: 3px; padding: 3px 6px; min-height: 30px; }
-            #top-bar select, #top-bar button { font-size: 0.6rem; padding: 1px 4px; height: 22px; }
-            .room-name-label { font-size: 0.7rem; }
-            #top-bar .room-info { font-size: 0.65rem; }
+            #tools .tool-btn { width: 32px; height: 32px; font-size: 1rem; }
+            #tools .color-picker { width: 32px; height: 32px; flex-shrink: 0; }
+            #tools input[type="range"] { width: 80px; flex-shrink: 0; margin: 0 4px; }
+            .tools-row { flex-wrap: wrap; }
+            .tools-row .icon-grid { flex: 0 1 auto; }
+            .tools-row .icon-btn { width: 32px; height: 32px; font-size: 1rem; }
+            .action-buttons { flex: 0 1 auto; }
+            .action-buttons button { font-size: 0.7rem; padding: 4px 8px; min-width: 40px; }
+
+            #top-bar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; min-height: 40px; }
+            #top-bar select, #top-bar button { font-size: 0.7rem; padding: 4px 8px; height: 28px; }
+            .room-name-label { font-size: 0.8rem; }
+            #top-bar .room-info { font-size: 0.7rem; }
         }
 
         @media (max-width: 400px) {
-            #tools { max-height: 120px; padding: 2px 4px; }
-            #tools .tool-btn { width: 26px; height: 26px; font-size: 0.8rem; }
-            #tools .icon-btn { width: 30px; height: 30px; font-size: 1rem; }
+            #tools { max-height: 140px; padding: 4px 6px; }
+            #tools .tool-btn { width: 28px; height: 28px; font-size: 0.8rem; }
+            .tools-row .icon-btn { width: 28px; height: 28px; font-size: 0.9rem; }
             #tools input[type="range"] { width: 60px; }
-            #top-bar select, #top-bar button { font-size: 0.5rem; padding: 1px 3px; height: 18px; }
+            #top-bar select, #top-bar button { font-size: 0.6rem; padding: 3px 6px; height: 24px; }
         }
     </style>
 </head>
@@ -191,20 +209,20 @@
                     <button class="tool-btn" data-tool="eraser">🧹</button>
                 </div>
 
-                <!-- Цвет и толщина (ползунок шире) -->
+                <!-- Цвет и толщина -->
                 <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; width:100%;">
                     <input type="color" class="color-picker" id="color-picker" value="#ff0000" style="flex-shrink:0;">
                     <input type="range" id="line-width" min="1" max="20" value="3" style="flex:1; min-width:60px; height:6px;">
                     <span style="font-size:0.7rem; color:#aaa; flex-shrink:0;" id="width-label">3</span>
                 </div>
 
-                <!-- Иконки танков (компактные, как раньше) -->
-                <div class="icon-grid" id="icon-grid"></div>
-
-                <!-- Кнопки действий -->
-                <div class="action-buttons">
-                    <button class="undo-btn" id="undo-btn">↩️ Отменить</button>
-                    <button class="clear-btn" id="clear-btn">🗑️ Очистить</button>
+                <!-- Строка с иконками классов и кнопками действий -->
+                <div class="tools-row">
+                    <div class="icon-grid" id="icon-grid"></div>
+                    <div class="action-buttons">
+                        <button class="undo-btn" id="undo-btn">↩️</button>
+                        <button class="clear-btn" id="clear-btn">🗑️</button>
+                    </div>
                 </div>
             </div>
             <div id="canvas-container">
@@ -343,16 +361,21 @@
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
         if (clientX == null) return { x:0, y:0 };
-        // Учитываем масштабирование
-        const x = (clientX - rect.left - state.translateX) / state.scale;
-        const y = (clientY - rect.top - state.translateY) / state.scale;
-        return { x, y };
+        // Координаты клика относительно rect без учёта трансформаций (для получения точки на карте)
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
     }
 
+    // Преобразование координат canvas (с учётом трансформаций) в координаты картинки
     function canvasToImage(cx, cy) {
+        // Применяем обратную трансформацию
+        const tx = (cx - state.translateX) / state.scale;
+        const ty = (cy - state.translateY) / state.scale;
         if (state.imgDrawW === 0 || state.imgDrawH === 0) return { x: 0, y: 0 };
-        let ix = (cx - state.imgOffsetX) / state.imgDrawW * state.imgWidth;
-        let iy = (cy - state.imgOffsetY) / state.imgDrawH * state.imgHeight;
+        let ix = (tx - state.imgOffsetX) / state.imgDrawW * state.imgWidth;
+        let iy = (ty - state.imgOffsetY) / state.imgDrawH * state.imgHeight;
         return { x: ix, y: iy };
     }
 
@@ -360,7 +383,11 @@
         if (state.imgWidth === 0 || state.imgHeight === 0) return { x: 0, y: 0 };
         let cx = (ix / state.imgWidth) * state.imgDrawW + state.imgOffsetX;
         let cy = (iy / state.imgHeight) * state.imgDrawH + state.imgOffsetY;
-        return { x: cx, y: cy };
+        // Применяем трансформацию масштаба
+        return {
+            x: cx * state.scale + state.translateX,
+            y: cy * state.scale + state.translateY
+        };
     }
 
     function toImageRelative(ix, iy) {
@@ -614,6 +641,10 @@
         else if (MAPS.length > 0) mapSelect.value = MAPS[0].file;
         updatePlayerCount();
         deleteRoomBtn.style.display = state.isCreator ? 'inline-block' : 'none';
+        // Сброс масштаба при входе
+        state.scale = 1;
+        state.translateX = 0;
+        state.translateY = 0;
     }
 
     function updatePlayerCount() {
@@ -663,14 +694,23 @@
         }
         const offsetX = (rect.width - drawW) / 2;
         const offsetY = (rect.height - drawH) / 2;
-        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
-
         state.imgOffsetX = offsetX;
         state.imgOffsetY = offsetY;
         state.imgDrawW = drawW;
         state.imgDrawH = drawH;
 
+        // Применяем трансформации ко всей сцене
+        ctx.save();
+        ctx.translate(state.translateX, state.translateY);
+        ctx.scale(state.scale, state.scale);
+
+        // Рисуем карту
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+        // Рисуем все рисунки (они тоже трансформируются)
         drawAllDrawings(rect);
+
+        ctx.restore();
     }
 
     function drawFallbackScene(mapName) {
@@ -681,6 +721,19 @@
         canvas.style.height = rect.height + 'px';
         ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         ctx.clearRect(0, 0, rect.width, rect.height);
+
+        // fallback – сетка
+        state.imgWidth = 1000;
+        state.imgHeight = 1000;
+        state.imgOffsetX = 0;
+        state.imgOffsetY = 0;
+        state.imgDrawW = rect.width;
+        state.imgDrawH = rect.height;
+
+        ctx.save();
+        ctx.translate(state.translateX, state.translateY);
+        ctx.scale(state.scale, state.scale);
+
         ctx.fillStyle = '#2a2a4a';
         ctx.fillRect(0, 0, rect.width, rect.height);
         ctx.strokeStyle = '#444';
@@ -693,28 +746,19 @@
         ctx.fillStyle = '#aaa';
         ctx.font = '20px sans-serif';
         ctx.fillText(`Карта: ${mapName} (не найдена)`, 20, 40);
-        state.imgWidth = 1000;
-        state.imgHeight = 1000;
-        state.imgOffsetX = 0;
-        state.imgOffsetY = 0;
-        state.imgDrawW = rect.width;
-        state.imgDrawH = rect.height;
+
         drawAllDrawings(rect);
+        ctx.restore();
     }
 
-    // ========== ОТРИСОВКА ==========
+    // ========== ОТРИСОВКА РИСУНКОВ (без трансформаций, т.к. они уже применены) ==========
     function drawAllDrawings(rect) {
         const allDrawings = state.drawings.concat(state.tempDrawings);
-        // Применяем трансформации масштаба
-        ctx.save();
-        ctx.translate(state.translateX, state.translateY);
-        ctx.scale(state.scale, state.scale);
         allDrawings.forEach((item, index) => {
             if (item.type === 'icon') drawIcon(item, index);
             else if (item.type === 'freehand') drawFreehand(item);
             else drawShape(item);
         });
-        ctx.restore();
     }
 
     function drawShape(item) {
@@ -826,7 +870,6 @@
     function onTouchStart(e) { 
         e.preventDefault(); 
         if (e.touches.length === 2) {
-            // Начало зума
             state.isZooming = true;
             state.lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             return;
@@ -837,16 +880,18 @@
     function onTouchMove(e) { 
         e.preventDefault(); 
         if (e.touches.length === 2 && state.isZooming) {
-            // Обработка зума
             const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             const delta = dist / state.lastTouchDist;
-            state.scale = Math.min(5, Math.max(0.5, state.scale * delta));
-            // Центрируем зум по середине между пальцами
             const rect = canvas.getBoundingClientRect();
             const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
             const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-            // Небольшая корректировка трансляции (чтобы масштабирование было вокруг точки касания)
-            // Это базовая реализация; для идеала нужно больше математики, но для простоты оставим так.
+            // Применяем масштаб относительно центра касания
+            const oldScale = state.scale;
+            let newScale = Math.min(5, Math.max(0.5, oldScale * delta));
+            // Корректируем трансляцию, чтобы точка под пальцами оставалась на месте
+            state.translateX = cx - (cx - state.translateX) * (newScale / oldScale);
+            state.translateY = cy - (cy - state.translateY) * (newScale / oldScale);
+            state.scale = newScale;
             state.lastTouchDist = dist;
             renderDrawings();
             return;
@@ -868,7 +913,6 @@
         state.startX = rel.x;
         state.startY = rel.y;
 
-        // Ластик
         if (state.tool === 'eraser') {
             let minDist = Infinity;
             let minIndex = -1;
